@@ -766,18 +766,13 @@ a {
   background: rgba(255, 253, 248, 0.86);
 }
 
-.day-card img,
-.reading-cover {
+.day-card img {
   width: 100%;
   max-height: 220px;
   object-fit: cover;
   border-radius: 12px;
   display: block;
   margin-bottom: 12px;
-}
-
-.reading-cover {
-  max-width: 420px;
 }
 
 .day-card h2 {

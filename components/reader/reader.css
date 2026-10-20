@@ -1,23 +1,36 @@
-.reader-app {
+.reader-app,
+.reader-preview {
   --paper: #fffdf8;
   --ink: #352d26;
   --gold: #a17b43;
   --line: #e8dfd0;
+  background: var(--paper);
+  color: var(--ink);
+}
+
+.reader-app,
+.reader-app *,
+.reader-preview,
+.reader-preview * {
+  box-sizing: border-box;
+}
+
+.reader-app {
   position: fixed;
   inset: 0;
   display: grid;
   grid-template-columns: 220px minmax(0, 1fr);
   height: 100dvh;
-  background: var(--paper);
-  color: var(--ink);
   overflow: hidden;
 }
 
-.reader-app.lang-en {
+.reader-app.lang-en,
+.reader-preview.lang-en {
   font-family: var(--font-sans-en), "Source Sans 3", sans-serif;
 }
 
-.reader-app.lang-te {
+.reader-app.lang-te,
+.reader-preview.lang-te {
   font-family: var(--font-sans-te), "Noto Sans Telugu", sans-serif;
 }
 
@@ -37,6 +50,32 @@
   text-decoration: none;
 }
 
+.reader-app .day-jump {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+  margin: 8px 6px 4px;
+}
+
+.reader-app .day-jump a {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font: 600 10px system-ui, sans-serif;
+  color: #6b4a25;
+  text-decoration: none;
+  border: 1px solid #dbcbb6;
+  background: #fffdf8;
+  border-radius: 5px;
+  padding: 0 6px;
+  min-height: 22px;
+  line-height: 20px;
+}
+
+.reader-app .day-jump a:hover {
+  background: #e9dcc5;
+}
+
 .reader-app .side h2 {
   margin: 4px 9px 2px;
   font-weight: 600;
@@ -45,13 +84,15 @@
 
 .reader-app.lang-en .side h2,
 .reader-app.lang-en .bar-title,
-.reader-app.lang-en .section-title {
+.reader-app.lang-en .section-title,
+.reader-preview.lang-en .section-title {
   font-family: var(--font-serif-en), "Libre Baskerville", serif;
 }
 
 .reader-app.lang-te .side h2,
 .reader-app.lang-te .bar-title,
-.reader-app.lang-te .section-title {
+.reader-app.lang-te .section-title,
+.reader-preview.lang-te .section-title {
   font-family: var(--font-serif-te), "Noto Serif Telugu", serif;
 }
 
@@ -78,8 +119,18 @@
   align-items: flex-start;
   padding: 8px 9px;
   border-radius: 6px;
-  font: 400 12px/1.5 var(--font-sans-te), "Noto Sans Telugu", sans-serif;
+  font-size: 12px;
+  line-height: 1.5;
+  font-weight: 400;
   cursor: pointer;
+}
+
+.reader-app.lang-en .nav button {
+  font-family: var(--font-sans-en), "Source Sans 3", sans-serif;
+}
+
+.reader-app.lang-te .nav button {
+  font-family: var(--font-sans-te), "Noto Sans Telugu", sans-serif;
 }
 
 .reader-app .nav button:hover,
@@ -180,6 +231,9 @@
   min-height: 0;
   position: relative;
   overflow: hidden;
+  /* Padding lives here (not on .columns) so every spread / right-hand
+     page keeps the same inset — CSS columns only pad the first page. */
+  padding: 16px 24px 14px;
 }
 
 .reader-app .columns {
@@ -187,8 +241,8 @@
   width: 100%;
   overflow: hidden;
   column-count: 2;
-  column-gap: 20px;
-  padding: 18px 10px 0;
+  column-gap: 36px;
+  padding: 0;
   column-fill: auto;
   scroll-behavior: smooth;
 }
@@ -209,15 +263,29 @@
   color: #8b6840;
 }
 
-.reader-app .columns p {
-  font: 400 14px/1.73 var(--font-sans-te), "Noto Sans Telugu", sans-serif;
+.reader-app .columns p,
+.reader-preview p {
   margin: 0 0 8px;
   text-align: left;
   overflow-wrap: anywhere;
   break-inside: avoid-column;
+  font-size: 14px;
+  line-height: 1.73;
+  font-weight: 400;
 }
 
-.reader-app .section-title {
+.reader-app.lang-en .columns p,
+.reader-preview.lang-en p {
+  font-family: var(--font-sans-en), "Source Sans 3", sans-serif;
+}
+
+.reader-app.lang-te .columns p,
+.reader-preview.lang-te p {
+  font-family: var(--font-sans-te), "Noto Sans Telugu", sans-serif;
+}
+
+.reader-app .section-title,
+.reader-preview .section-title {
   font-weight: 600;
   font-size: 18px;
   line-height: 1.6;
@@ -226,17 +294,35 @@
   break-after: avoid-column;
 }
 
+.reader-app .columns .intro,
+.reader-preview .intro {
+  font: 11px system-ui, sans-serif;
+  color: var(--gold);
+  margin: 0 0 8px;
+}
+
 .reader-app .columns mark {
   background: #f3e2b8;
   color: inherit;
   padding: 0 1px;
 }
 
+.reader-app .reading-cover {
+  display: block;
+  width: 100%;
+  max-width: 420px;
+  max-height: 220px;
+  object-fit: cover;
+  border-radius: 12px;
+  margin: 10px 0 12px;
+  break-inside: avoid-column;
+}
+
 .reader-app .spread:after {
   content: "";
   position: absolute;
-  top: 0;
-  bottom: 0;
+  top: 16px;
+  bottom: 14px;
   left: 50%;
   width: 1px;
   background: var(--line);
@@ -308,13 +394,30 @@
   white-space: nowrap;
 }
 
-.reader-app.font-large .columns p {
+.reader-app.font-large .columns p,
+.reader-preview.font-large p {
   font-size: 16px;
   line-height: 1.8;
 }
 
-.reader-app.font-large .section-title {
+.reader-app.font-large .section-title,
+.reader-preview.font-large .section-title {
   font-size: 20px;
+}
+
+/* Embedded Swadhyaya-style preview while editing paragraphs */
+.reader-preview {
+  position: relative;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  padding: 14px 16px 16px;
+  max-height: min(52vh, 520px);
+  overflow: auto;
+  margin: 0 0 14px;
+}
+
+.reader-preview .intro {
+  margin-top: 0;
 }
 
 .hl-toolbar {

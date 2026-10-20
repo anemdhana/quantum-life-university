@@ -7,6 +7,7 @@ import { fetchSection, updateSection } from "@/lib/actions/admin";
 import { formatClock, youtubeWatchUrl } from "@/lib/content/paragraphs";
 import { readingPath } from "@/lib/series";
 import { SECTION_PLACEHOLDER, type Language, type ReaderSection, type SectionOutline } from "@/types/content";
+import "@/components/reader/reader.css";
 
 type Props = {
   series: string;
@@ -139,6 +140,18 @@ function SectionPane({
           </a>
         </div>
       ) : null}
+
+      <div className={`reader-preview lang-${language}`} aria-live="polite">
+        <p className="intro">Reader preview · same look as series Preview / Swadhyaya export</p>
+        <h2 className="section-title">{title.trim() || "Untitled section"}</h2>
+        {paragraphs.some((paragraph) => paragraph.trim()) ? (
+          paragraphs.map((paragraph, paragraphIndex) =>
+            paragraph.trim() ? <p key={paragraphIndex}>{paragraph}</p> : null,
+          )
+        ) : (
+          <p className="muted">Paragraphs will appear here as you type.</p>
+        )}
+      </div>
 
       {paragraphs.map((paragraph, paragraphIndex) => (
         <div key={paragraphIndex} className="admin-paragraph">

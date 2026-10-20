@@ -3,7 +3,7 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { SitePage } from "@/components/SitePage";
 import { TwoPageReader } from "@/components/reader/TwoPageReader";
-import { listDayLanguages, loadDay } from "@/lib/content";
+import { listDayLanguages, loadDay, loadLibrary } from "@/lib/content";
 import type { Language } from "@/types/content";
 
 type Props = {
@@ -30,9 +30,10 @@ export default async function SeriesDayPage({ params, searchParams }: Props) {
   if (!Number.isInteger(dayNumber) || dayNumber < 1 || dayNumber > 31) notFound();
 
   const language = languageOf(query.lang);
-  const [content, languages] = await Promise.all([
+  const [content, languages, library] = await Promise.all([
     loadDay(series, dayNumber, language),
     listDayLanguages(series, dayNumber),
+    loadLibrary(),
   ]);
 
   if (!content) {
@@ -49,11 +50,16 @@ export default async function SeriesDayPage({ params, searchParams }: Props) {
 
   const section = Number(query.section ?? "1");
   const spread = Number(query.spread ?? "0");
+  const seriesEntry = library.find((item) => item.slug === series);
+  const dayNumbers = (seriesEntry?.days ?? [])
+    .filter((item) => item.languages.includes(language))
+    .map((item) => item.dayNumber);
 
   return (
     <TwoPageReader
       day={content}
       languages={languages.length ? languages : [language]}
+      dayNumbers={dayNumbers.length ? dayNumbers : [dayNumber]}
       initialSection={Number.isFinite(section) ? section : 1}
       initialSpread={Number.isFinite(spread) ? spread : 0}
     />

@@ -24,6 +24,8 @@ type SelectionState = {
 type Props = {
   day: ReaderDay;
   languages?: Language[];
+  /** Published day numbers in this series+language (for Programme / Prev / Next). */
+  dayNumbers?: number[];
   initialSection?: number;
   initialSpread?: number;
 };
@@ -49,7 +51,13 @@ function withMarks(text: string, marks: string[]) {
   return nodes;
 }
 
-export function TwoPageReader({ day, languages = ["te", "en"], initialSection = 1, initialSpread = 0 }: Props) {
+export function TwoPageReader({
+  day,
+  languages = ["te", "en"],
+  dayNumbers,
+  initialSection = 1,
+  initialSpread = 0,
+}: Props) {
   const startChapter = Math.min(Math.max(initialSection, 1), day.sections.length) - 1;
   const [chapter, setChapter] = useState(startChapter);
   const [spreadIndex, setSpreadIndex] = useState(Math.max(initialSpread, 0));
@@ -207,6 +215,23 @@ export function TwoPageReader({ day, languages = ["te", "en"], initialSection = 
   const atStart = chapter === 0 && spreadIndex === 0;
   const atEnd = chapter === day.sections.length - 1 && spreadIndex === spreadCount - 1;
 
+  const orderedDays = [...(dayNumbers ?? [day.dayNumber])].sort((a, b) => a - b);
+  const dayIndex = orderedDays.indexOf(day.dayNumber);
+  const prevDay = dayIndex > 0 ? orderedDays[dayIndex - 1] : null;
+  const nextDay = dayIndex >= 0 && dayIndex < orderedDays.length - 1 ? orderedDays[dayIndex + 1] : null;
+
+  const dayJump = (
+    <nav className="day-jump" aria-label="Days">
+      <Link href="/">Programme</Link>
+      {prevDay != null ? (
+        <Link href={readingPath(day.series, prevDay, day.language)}>Prev</Link>
+      ) : null}
+      {nextDay != null ? (
+        <Link href={readingPath(day.series, nextDay, day.language)}>Next</Link>
+      ) : null}
+    </nav>
+  );
+
   const nav = (idPrefix: string) => (
     <ul className="nav" id={idPrefix}>
       {day.sections.map((item, index) => (
@@ -229,6 +254,7 @@ export function TwoPageReader({ day, languages = ["te", "en"], initialSection = 
         <Link className="brand" href="/">
           QUANTUM LIFE UNIVERSITY
         </Link>
+        {dayJump}
         <h2>{day.seriesName}</h2>
         <p className="sub">
           {day.title} · {day.subtitle}
@@ -324,7 +350,10 @@ export function TwoPageReader({ day, languages = ["te", "en"], initialSection = 
           </footer>
         </div>
       </main>
-      <div className={`mobile-side${menuOpen ? " open" : ""}`}>{nav("mobile-nav")}</div>
+      <div className={`mobile-side${menuOpen ? " open" : ""}`}>
+        {dayJump}
+        {nav("mobile-nav")}
+      </div>
       {selection ? (
         <HighlightToolbar
           x={selection.x}

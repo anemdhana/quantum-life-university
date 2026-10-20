@@ -83,6 +83,18 @@ type BookmarkRow = {
   created_at: string;
 };
 
+type NewsletterAssetRow = {
+  id: string;
+  title: string;
+  label: string;
+  summary: string;
+  image_url: string;
+  taken_on: string;
+  created_by: string | null;
+  created_at: string;
+  updated_at: string;
+};
+
 type Table<Row, Insert, Update = Partial<Insert>> = {
   Row: Row;
   Insert: Insert;
@@ -182,6 +194,20 @@ export type Database = {
           section_id: string;
           label?: string | null;
           created_at?: string;
+        }
+      >;
+      newsletter_assets: Table<
+        NewsletterAssetRow,
+        {
+          id?: string;
+          title: string;
+          label: string;
+          summary?: string;
+          image_url: string;
+          taken_on?: string;
+          created_by?: string | null;
+          created_at?: string;
+          updated_at?: string;
         }
       >;
     };

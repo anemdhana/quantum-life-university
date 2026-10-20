@@ -1,10 +1,8 @@
-import day7te from "@/content/day-07-te.json";
-import day8en from "@/content/day-08-en.json";
-import day8te from "@/content/day-08-te.json";
+import { cache } from "react";
 import { asParagraphs } from "@/lib/content/paragraphs";
 import { readingPath } from "@/lib/series";
 import { createClient } from "@/lib/supabase/server";
-import type { Language, LibraryDay, LibrarySeries, ReaderDay, ReaderSection } from "@/types/content";
+import type { Language, LibrarySeries, ReaderDay, ReaderSection, SectionOutline } from "@/types/content";
 
 export { readingPath };
 
@@ -46,15 +44,19 @@ function asDay(day: StoredDay, series: string, seriesName: string): ReaderDay {
   };
 }
 
-const localDays: ReaderDay[] = [
-  asDay(day7te as StoredDay, "devi-navaratrula-jnanam", "Devi Navaratrula Jnanam"),
-  asDay(day8te as StoredDay, "devi-navaratrula-jnanam", "Devi Navaratrula Jnanam"),
-  asDay(day8en as StoredDay, "devi-navaratrula-jnanam", "Devi Navaratrula Jnanam"),
-];
-
-export function listLocalDays() {
-  return localDays;
-}
+/** Offline fallbacks (~310KB) — loaded only when Supabase is unavailable. */
+const loadLocalDays = cache(async (): Promise<ReaderDay[]> => {
+  const [{ default: day7te }, { default: day8te }, { default: day8en }] = await Promise.all([
+    import("@/content/day-07-te.json"),
+    import("@/content/day-08-te.json"),
+    import("@/content/day-08-en.json"),
+  ]);
+  return [
+    asDay(day7te as StoredDay, "devi-navaratrula-jnanam", "Devi Navaratrula Jnanam"),
+    asDay(day8te as StoredDay, "devi-navaratrula-jnanam", "Devi Navaratrula Jnanam"),
+    asDay(day8en as StoredDay, "devi-navaratrula-jnanam", "Devi Navaratrula Jnanam"),
+  ];
+});
 
 function groupDays(
   rows: Array<{
@@ -94,7 +96,8 @@ function groupDays(
   return [...series.values()];
 }
 
-function localLibrary(): LibrarySeries[] {
+async function localLibrary(): Promise<LibrarySeries[]> {
+  const localDays = await loadLocalDays();
   return groupDays(
     localDays.map((day) => ({
       slug: day.series,
@@ -107,7 +110,29 @@ function localLibrary(): LibrarySeries[] {
   );
 }
 
-export async function loadLibrary(): Promise<LibrarySeries[]> {
+const getSeriesBySlug = cache(async (slug: string) => {
+  const supabase = await createClient();
+  if (!supabase) return null;
+  const { data } = await supabase.from("series").select("id, slug, name").eq("slug", slug).maybeSingle();
+  return data;
+});
+
+/** Series names only — for prepare UI without loading every day row. */
+export const listSeriesNames = cache(async (): Promise<string[]> => {
+  const supabase = await createClient();
+  if (!supabase) {
+    const library = await localLibrary();
+    return library.map((series) => series.name);
+  }
+  const { data, error } = await supabase.from("series").select("name").order("created_at", { ascending: false });
+  if (error || !data) {
+    const library = await localLibrary();
+    return library.map((series) => series.name);
+  }
+  return data.map((row) => row.name);
+});
+
+export const loadLibrary = cache(async (): Promise<LibrarySeries[]> => {
   const supabase = await createClient();
   if (!supabase) return localLibrary();
 
@@ -144,12 +169,36 @@ export async function loadLibrary(): Promise<LibrarySeries[]> {
   const order = new Map(series.map((item, index) => [item.slug, index]));
   remote.sort((a, b) => (order.get(a.slug) ?? 0) - (order.get(b.slug) ?? 0));
   return remote;
-}
+});
 
-export async function loadDay(series: string, dayNumber: number, language: Language): Promise<ReaderDay | null> {
+/** Lightweight language list for a day — avoids loading full section payloads twice. */
+export const listDayLanguages = cache(async (series: string, dayNumber: number): Promise<Language[]> => {
   const supabase = await createClient();
   if (supabase) {
-    const { data: parent } = await supabase.from("series").select("id, slug, name").eq("slug", series).maybeSingle();
+    const parent = await getSeriesBySlug(series);
+    if (!parent) return [];
+    const { data: days } = await supabase
+      .from("days")
+      .select("language")
+      .eq("series_id", parent.id)
+      .eq("day_number", dayNumber)
+      .eq("published", true);
+    return [...new Set((days ?? []).map((day) => (day.language === "en" ? "en" : "te") as Language))].sort((a, b) =>
+      a === "te" ? -1 : b === "te" ? 1 : a.localeCompare(b),
+    );
+  }
+
+  const localDays = await loadLocalDays();
+  return localDays
+    .filter((day) => day.series === series && day.dayNumber === dayNumber)
+    .map((day) => day.language)
+    .sort((a, b) => (a === "te" ? -1 : b === "te" ? 1 : a.localeCompare(b)));
+});
+
+export const loadDay = cache(async (series: string, dayNumber: number, language: Language): Promise<ReaderDay | null> => {
+  const supabase = await createClient();
+  if (supabase) {
+    const parent = await getSeriesBySlug(series);
     if (!parent) return null;
 
     const { data: day } = await supabase
@@ -192,5 +241,128 @@ export async function loadDay(series: string, dayNumber: number, language: Langu
     };
   }
 
+  const localDays = await loadLocalDays();
   return localDays.find((day) => day.series === series && day.dayNumber === dayNumber && day.language === language) ?? null;
-}
+});
+
+export type DayOutline = {
+  dayNumber: number;
+  language: Language;
+  series: string;
+  seriesName: string;
+  title: string;
+  youtubeId: string | null;
+  sections: SectionOutline[];
+};
+
+/** Section titles for the edit nav — no paragraph bodies. */
+export const loadDayOutline = cache(async (series: string, dayNumber: number, language: Language): Promise<DayOutline | null> => {
+  const supabase = await createClient();
+  if (supabase) {
+    const parent = await getSeriesBySlug(series);
+    if (!parent) return null;
+
+    const { data: day } = await supabase
+      .from("days")
+      .select("id, day_number, title, language, published, youtube_id")
+      .eq("series_id", parent.id)
+      .eq("day_number", dayNumber)
+      .eq("language", language)
+      .maybeSingle();
+
+    if (!day?.published) return null;
+
+    const { data: sections } = await supabase
+      .from("sections")
+      .select("id, section_order, title, minutes, start_sec")
+      .eq("day_id", day.id)
+      .order("section_order");
+
+    if (!sections?.length) return null;
+
+    return {
+      dayNumber: day.day_number,
+      language: day.language,
+      series: parent.slug,
+      seriesName: parent.name,
+      title: day.title,
+      youtubeId: day.youtube_id ?? null,
+      sections: sections.map(
+        (section): SectionOutline => ({
+          id: section.id,
+          sectionOrder: section.section_order,
+          title: section.title,
+          minutes: section.minutes,
+          startSec: section.start_sec ?? null,
+        }),
+      ),
+    };
+  }
+
+  const day = await loadDay(series, dayNumber, language);
+  if (!day) return null;
+  return {
+    dayNumber: day.dayNumber,
+    language: day.language,
+    series: day.series,
+    seriesName: day.seriesName,
+    title: day.title,
+    youtubeId: day.youtubeId,
+    sections: day.sections.map(
+      (section): SectionOutline => ({
+        id: section.id,
+        sectionOrder: section.sectionOrder,
+        title: section.title,
+        minutes: section.minutes,
+        startSec: section.startSec,
+      }),
+    ),
+  };
+});
+
+/** One section’s paragraphs — loaded when that nav item is opened. */
+export const loadSection = cache(
+  async (
+    series: string,
+    dayNumber: number,
+    language: Language,
+    sectionOrder: number,
+  ): Promise<ReaderSection | null> => {
+    const supabase = await createClient();
+    if (supabase) {
+      const parent = await getSeriesBySlug(series);
+      if (!parent) return null;
+
+      const { data: day } = await supabase
+        .from("days")
+        .select("id, published")
+        .eq("series_id", parent.id)
+        .eq("day_number", dayNumber)
+        .eq("language", language)
+        .maybeSingle();
+
+      if (!day?.published) return null;
+
+      const { data: section } = await supabase
+        .from("sections")
+        .select("id, section_order, title, content, minutes, start_sec")
+        .eq("day_id", day.id)
+        .eq("section_order", sectionOrder)
+        .maybeSingle();
+
+      if (!section) return null;
+
+      return {
+        id: section.id,
+        sectionOrder: section.section_order,
+        title: section.title,
+        content: asParagraphs(section.content),
+        minutes: section.minutes,
+        startSec: section.start_sec ?? null,
+      };
+    }
+
+    const day = await loadDay(series, dayNumber, language);
+    return day?.sections.find((item) => item.sectionOrder === sectionOrder) ?? null;
+  },
+);

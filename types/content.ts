@@ -9,6 +9,15 @@ export type ReaderSection = {
   startSec: number | null;
 };
 
+/** Nav/list row without paragraph payloads. */
+export type SectionOutline = {
+  id: string;
+  sectionOrder: number;
+  title: string;
+  minutes: number | null;
+  startSec: number | null;
+};
+
 export type ReaderDay = {
   dayNumber: number;
   language: Language;

@@ -34,6 +34,14 @@ if errorlevel 1 (
   exit /b 1
 )
 
+echo Waiting for the API gateway (Kong on :54331) ...
+powershell -NoProfile -Command ^
+  "$deadline = (Get-Date).AddMinutes(2); do { try { $r = Invoke-WebRequest -UseBasicParsing http://127.0.0.1:54331/auth/v1/health -TimeoutSec 2; if ($r.StatusCode -ge 200) { exit 0 } } catch {} ; $st = docker inspect -f '{{.State.Status}}' qlu-kong 2>$null; if ($st -eq 'restarting') { docker compose up -d --force-recreate kong | Out-Null }; Start-Sleep -Seconds 2 } while ((Get-Date) -lt $deadline); exit 1"
+if errorlevel 1 (
+  echo Kong did not become healthy. Pages will feel very slow until the API is up.
+  echo Try: docker compose up -d --force-recreate kong
+)
+
 echo Starting the reader on http://localhost:3000 ...
 start "Self Knowledge Reading" cmd /k "npm run dev -- --port 3000"
 

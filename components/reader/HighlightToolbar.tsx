@@ -1,7 +1,12 @@
 "use client";
 
+import dynamic from "next/dynamic";
 import { useState } from "react";
-import { VoiceNoteRecorder } from "@/components/reader/VoiceNoteRecorder";
+
+const VoiceNoteRecorder = dynamic(
+  () => import("@/components/reader/VoiceNoteRecorder").then((mod) => mod.VoiceNoteRecorder),
+  { ssr: false },
+);
 
 type Props = {
   x: number;

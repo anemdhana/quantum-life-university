@@ -1,11 +1,12 @@
 {
   "dayNumber": 8,
   "language": "en",
+  "series": "devi-navaratrula-jnanam",
   "title": "Jnanodayam",
   "subtitle": "Devi Navaratri · Day 8 (English)",
   "sections": [
     {
-      "id": "a84118d3-ab79-43cc-a4c3-5a40b0e472ca",
+      "id": "f288a8d3-3428-4a16-a5b1-39938c7d4f6b",
       "sectionOrder": 1,
       "title": "Opening Meditation · Anapanasati",
       "content": [
@@ -22,7 +23,7 @@
       "minutes": 3
     },
     {
-      "id": "cde43afe-6932-4f10-a97d-9bdfbba2d04b",
+      "id": "b2a4f64d-ba56-42ed-a83e-aa7d393414cf",
       "sectionOrder": 2,
       "title": "Devi Shakti · Respect for Nature",
       "content": [
@@ -47,7 +48,7 @@
       "minutes": 5
     },
     {
-      "id": "f5ae5a3d-e64e-4449-aaea-83848fb7f987",
+      "id": "953e8e5f-7469-4556-ab4e-7335b4107bed",
       "sectionOrder": 3,
       "title": "Anger · The Power of Words",
       "content": [
@@ -61,7 +62,7 @@
       "minutes": 2
     },
     {
-      "id": "9473b5e9-774b-4542-aa57-2dfbe5012139",
+      "id": "70e993e5-cbd4-4262-ae84-b917d2b9572a",
       "sectionOrder": 4,
       "title": "Time · Experiences · Liberation",
       "content": [
@@ -87,7 +88,7 @@
       "minutes": 5
     },
     {
-      "id": "d4b873fc-0e20-4593-a8bf-951ceebbb046",
+      "id": "526155bf-8e31-4ba4-ae0c-0b6713b5eca3",
       "sectionOrder": 5,
       "title": "Mahasaraswati · Self-Knowledge",
       "content": [
@@ -104,7 +105,7 @@
       "minutes": 3
     },
     {
-      "id": "dfb0eb09-c54a-4bba-aad2-07e4161c8ecb",
+      "id": "14b1d74f-1e02-42a2-aa61-af83f71741b1",
       "sectionOrder": 6,
       "title": "King Suratha · The Story of Samadhi",
       "content": [
@@ -124,7 +125,7 @@
       "minutes": 4
     },
     {
-      "id": "a82cde49-41c0-48d5-ac5f-6ca09d66ac9c",
+      "id": "7667a19e-0f85-42a9-aea7-192416a01416",
       "sectionOrder": 7,
       "title": "The Seven Planes of Knowledge (Sapta Jnana Bhumikas)",
       "content": [
@@ -178,7 +179,7 @@
       "minutes": 14
     },
     {
-      "id": "39739cda-4072-43d8-a0b9-e8b84ba8fd5d",
+      "id": "3f137a56-eb8f-41fd-acf1-03013fece1ce",
       "sectionOrder": 8,
       "title": "Devi Samarpan · The Practice",
       "content": [
@@ -194,7 +195,7 @@
       "minutes": 2
     },
     {
-      "id": "9dd37521-d1f2-42c3-a774-54667ad63aad",
+      "id": "ce98de5d-5931-4dfe-a26d-085fdec7295b",
       "sectionOrder": 9,
       "title": "The Devi Chant · Shared Experiences",
       "content": [
@@ -225,7 +226,7 @@
       "minutes": 7
     },
     {
-      "id": "d75b0841-6ce0-4927-a643-f73afc22c7e3",
+      "id": "09adf267-629f-4e21-adb0-3992107f5dd6",
       "sectionOrder": 10,
       "title": "Closing · Upcoming Programmes",
       "content": [

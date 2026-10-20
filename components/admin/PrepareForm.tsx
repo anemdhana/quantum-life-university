@@ -41,14 +41,13 @@ Requirements:
 * Natural, complete-sentence section openings — each section and each paragraph must start with a full sentence (not mid-phrase).
 * Skip guided meditation / breath-watch / silence / chant-only stretches; keep only the speaker teaching on the day's topic.
 * Split into clear topic sections with short Telugu (or English) titles.
-* Return a downloadable .json file (or canvas file) named like day-NN-te.json — not only inline chat text.
+* Return a downloadable .json file (or canvas file) named like day-NN-te.json.
 * The file contents must be only valid JSON in this shape (no markdown fences, no commentary):
 
 ${JSON_SHAPE}
 
 * startSec = whole seconds from the first caption line of that section (from [m:ss] / [h:mm:ss] stamps).
-* minutes = rough read time for that section.
-* Upload / paste the captions file after this prompt.`;
+* minutes = rough read time for that section.`;
 
 const DEFAULT_SUMMARY_PROMPT = `Need one more JSON — a summary version of each section from the given day JSON (or captions).
 
@@ -59,12 +58,11 @@ Requirements:
 * Natural, complete-sentence openings for every section and paragraph.
 * Same language as the source (Telugu or English). Do not invent new teachings; compress and clarify what was spoken.
 * Recalculate minutes from the summary length.
-* Return a downloadable .json file (or canvas file) named like day-NN-te-summary.json — not only inline chat text.
+* Return a downloadable .json file (or canvas file) named like day-NN-te-summary.json.
 * The file contents must be only valid JSON in this shape (no markdown fences, no commentary):
 
 ${JSON_SHAPE}
-
-* Paste the full sections JSON (or captions) after this prompt.`;
+`;
 
 type Prepared = { order: number; title: string; minutes: number };
 type PromptKind = "full" | "summary";
@@ -181,198 +179,183 @@ export function PrepareForm({ seriesNames }: { seriesNames: string[] }) {
   }
 
   return (
-    <div>
-      <p className="muted uk-margin-small-bottom">
-        1. Download captions · 2. Edit/copy a prompt + open{" "}
+    <form ref={formRef} className="prepare-board" onSubmit={(event) => void onImport(event)}>
+      <p className="prepare-steps muted">
+        1. Captions · 2. Copy prompt +{" "}
         <a href={CHATGPT_SECTIONS_URL} target="_blank" rel="noreferrer">
           ChatGPT
         </a>{" "}
-        · 3. Paste or download JSON · 4. Import · 5. Edit sections.
+        · 3. JSON · 4. Import · 5. Edit
       </p>
 
-      <form
-        ref={formRef}
-        className="uk-card uk-card-default uk-card-body"
-        onSubmit={(event) => void onImport(event)}
-      >
-        <label className="uk-form-label" htmlFor="series">
-          Series
-        </label>
-        <input
-          id="series"
-          name="series"
-          className="uk-input uk-margin-small-bottom"
-          list="series-names"
-          required
-          defaultValue="Devi Navaratrula Jnanam"
-          placeholder="Devi Navaratrula Jnanam"
-        />
-        <datalist id="series-names">
-          {seriesNames.map((name) => (
-            <option key={name} value={name} />
-          ))}
-        </datalist>
-
-        <div className="uk-grid uk-grid-small uk-child-width-1-2@s" data-uk-grid>
-          <div>
-            <label className="uk-form-label" htmlFor="day">
-              Day
-            </label>
+      <section className="prepare-tile">
+        <h2>Reading</h2>
+        <div className="prepare-fields">
+          <label className="prepare-span-2">
+            <span>Series</span>
+            <input
+              id="series"
+              name="series"
+              className="uk-input"
+              list="series-names"
+              required
+              defaultValue="Devi Navaratrula Jnanam"
+              placeholder="Devi Navaratrula Jnanam"
+            />
+            <datalist id="series-names">
+              {seriesNames.map((name) => (
+                <option key={name} value={name} />
+              ))}
+            </datalist>
+          </label>
+          <label>
+            <span>Day</span>
             <input id="day" name="day" className="uk-input" type="number" min={1} max={31} required defaultValue={1} />
-          </div>
-          <div>
-            <label className="uk-form-label" htmlFor="title">
-              Title
-            </label>
-            <input id="title" name="title" className="uk-input" placeholder="Optional if title is in JSON" />
-          </div>
-        </div>
-
-        <label className="uk-form-label uk-margin-small-top" htmlFor="image">
-          Opening image
-        </label>
-        <input id="image" name="image" className="uk-margin-small-bottom" type="file" accept="image/jpeg,image/png,image/webp" />
-
-        <div className="uk-grid uk-grid-small uk-child-width-1-2@s" data-uk-grid>
-          <div>
-            <label className="uk-form-label" htmlFor="youtube">
-              YouTube ID or URL
-            </label>
-            <input id="youtube" name="youtube" className="uk-input" placeholder="dQw4w9WgXcQ or https://youtu.be/…" />
-          </div>
-          <div>
-            <label className="uk-form-label" htmlFor="language">
-              Caption language
-            </label>
+          </label>
+          <label>
+            <span>Language</span>
             <select id="language" name="language" className="uk-select" defaultValue="te">
               <option value="te">Telugu</option>
               <option value="en">English</option>
             </select>
-          </div>
+          </label>
+          <label className="prepare-span-2">
+            <span>Title</span>
+            <input id="title" name="title" className="uk-input" placeholder="Optional if in JSON" />
+          </label>
+          <label className="prepare-span-2">
+            <span>Opening image</span>
+            <input id="image" name="image" type="file" accept="image/jpeg,image/png,image/webp" />
+          </label>
         </div>
+      </section>
 
-        <div className="uk-margin-small-top">
-          <button
-            className="uk-button uk-button-default"
-            type="button"
-            disabled={pending !== null}
-            onClick={() => void onDownloadCaptions()}
-          >
+      <section className="prepare-tile">
+        <h2>Captions</h2>
+        <div className="prepare-fields">
+          <label className="prepare-span-2">
+            <span>YouTube ID or URL</span>
+            <input id="youtube" name="youtube" className="uk-input" placeholder="dQw4w9WgXcQ or https://youtu.be/…" />
+          </label>
+        </div>
+        <div className="prepare-actions">
+          <button className="uk-button uk-button-default uk-button-small" type="button" disabled={pending !== null} onClick={() => void onDownloadCaptions()}>
             {pending === "captions" ? "Downloading…" : "Download captions"}
-          </button>{" "}
-          <a className="uk-button uk-button-default" href={CHATGPT_SECTIONS_URL} target="_blank" rel="noreferrer">
+          </button>
+          <a className="uk-button uk-button-default uk-button-small" href={CHATGPT_SECTIONS_URL} target="_blank" rel="noreferrer">
             Open ChatGPT
           </a>
         </div>
+      </section>
 
-        <label className="uk-form-label uk-margin-top" htmlFor="chatgpt-prompt-full">
-          Prompt · full captions → JSON
-        </label>
-        <p className="muted uk-margin-remove-top">Edit if needed, copy, then attach the captions <code>.txt</code> in ChatGPT.</p>
+      <section className="prepare-tile">
+        <div className="prepare-tile-head">
+          <h2>Full prompt</h2>
+          <div className="prepare-actions">
+            <button className="uk-button uk-button-default uk-button-small" type="button" onClick={() => void onCopyPrompt("full")}>
+              {promptCopied === "full" ? "Copied" : "Copy"}
+            </button>
+            <button className="uk-button uk-button-text uk-button-small" type="button" onClick={() => setFullPrompt(DEFAULT_FULL_PROMPT)}>
+              Reset
+            </button>
+          </div>
+        </div>
+        <p className="prepare-hint muted">Captions → full JSON. Attach the .txt in ChatGPT.</p>
         <textarea
           id="chatgpt-prompt-full"
-          className="uk-textarea"
-          rows={10}
+          className="uk-textarea prepare-prompt"
+          rows={7}
           value={fullPrompt}
           onChange={(event) => setFullPrompt(event.target.value)}
         />
-        <div className="uk-margin-small-top">
-          <button className="uk-button uk-button-default" type="button" onClick={() => void onCopyPrompt("full")}>
-            {promptCopied === "full" ? "Copied" : "Copy full prompt"}
-          </button>{" "}
-          <button
-            className="uk-button uk-button-default"
-            type="button"
-            onClick={() => setFullPrompt(DEFAULT_FULL_PROMPT)}
-          >
-            Reset
-          </button>
-        </div>
+      </section>
 
-        <label className="uk-form-label uk-margin-top" htmlFor="chatgpt-prompt-summary">
-          Prompt · section summaries (2+ pages each)
-        </label>
-        <p className="muted uk-margin-remove-top">Edit if needed, copy, then paste the day JSON (or captions) in ChatGPT.</p>
+      <section className="prepare-tile">
+        <div className="prepare-tile-head">
+          <h2>Summary prompt</h2>
+          <div className="prepare-actions">
+            <button className="uk-button uk-button-default uk-button-small" type="button" onClick={() => void onCopyPrompt("summary")}>
+              {promptCopied === "summary" ? "Copied" : "Copy"}
+            </button>
+            <button className="uk-button uk-button-text uk-button-small" type="button" onClick={() => setSummaryPrompt(DEFAULT_SUMMARY_PROMPT)}>
+              Reset
+            </button>
+          </div>
+        </div>
+        <p className="prepare-hint muted">Day JSON → 2+ page summaries per section.</p>
         <textarea
           id="chatgpt-prompt-summary"
-          className="uk-textarea"
-          rows={10}
+          className="uk-textarea prepare-prompt"
+          rows={7}
           value={summaryPrompt}
           onChange={(event) => setSummaryPrompt(event.target.value)}
         />
-        <div className="uk-margin-small-top">
-          <button className="uk-button uk-button-default" type="button" onClick={() => void onCopyPrompt("summary")}>
-            {promptCopied === "summary" ? "Copied" : "Copy summary prompt"}
-          </button>{" "}
-          <button
-            className="uk-button uk-button-default"
-            type="button"
-            onClick={() => setSummaryPrompt(DEFAULT_SUMMARY_PROMPT)}
-          >
-            Reset
-          </button>
+      </section>
+
+      <section className="prepare-tile prepare-tile-wide">
+        <div className="prepare-tile-head">
+          <h2>Import JSON</h2>
+          <div className="prepare-actions">
+            <button className="uk-button uk-button-primary uk-button-small" type="submit" disabled={pending !== null}>
+              {pending === "import" ? "Importing…" : "Import"}
+            </button>
+            <button className="uk-button uk-button-default uk-button-small" type="button" disabled={!jsonText.trim()} onClick={onDownloadJson}>
+              Download
+            </button>
+          </div>
         </div>
-
-        <label className="uk-form-label uk-margin-top" htmlFor="json-file">
-          Sections JSON file
-        </label>
-        <input
-          id="json-file"
-          className="uk-margin-small-bottom"
-          type="file"
-          accept="application/json,.json,text/plain"
-          onChange={(event) => void onJsonFile(event.target.files?.[0] ?? null)}
-        />
-
-        <label className="uk-form-label" htmlFor="json">
-          Or paste JSON
-        </label>
-        <textarea
-          id="json"
-          className="uk-textarea lang-te"
-          rows={14}
-          value={jsonText}
-          onChange={(event) => setJsonText(event.target.value)}
-          placeholder={SAMPLE_JSON}
-          required
-        />
-
-        <div className="uk-margin-small-top">
-          <button className="uk-button uk-button-primary" type="submit" disabled={pending !== null}>
-            {pending === "import" ? "Importing…" : "Import JSON"}
-          </button>{" "}
-          <button
-            className="uk-button uk-button-default"
-            type="button"
-            disabled={!jsonText.trim()}
-            onClick={onDownloadJson}
-          >
-            Download JSON
-          </button>
+        <div className="prepare-json-grid">
+          <label>
+            <span>Upload file</span>
+            <input
+              id="json-file"
+              type="file"
+              accept="application/json,.json,text/plain"
+              onChange={(event) => void onJsonFile(event.target.files?.[0] ?? null)}
+            />
+          </label>
+          <label className="prepare-json-paste">
+            <span>Or paste JSON</span>
+            <textarea
+              id="json"
+              className="uk-textarea lang-te"
+              rows={8}
+              value={jsonText}
+              onChange={(event) => setJsonText(event.target.value)}
+              placeholder={SAMPLE_JSON}
+              required
+            />
+          </label>
         </div>
-      </form>
+      </section>
 
-      {message ? <p>{message}</p> : null}
-      {href ? (
-        <p>
-          {editHref ? (
-            <>
-              <a href={editHref}>Edit sections</a>
-              {" · "}
-            </>
+      {(message || href || sections.length > 0) && (
+        <section className="prepare-tile prepare-tile-wide prepare-result">
+          {message ? <p className="prepare-message">{message}</p> : null}
+          {href ? (
+            <p className="prepare-links">
+              {editHref ? (
+                <>
+                  <a href={editHref}>Edit sections</a>
+                  <span aria-hidden="true">·</span>
+                </>
+              ) : null}
+              <a href={href}>Open reading</a>
+            </p>
           ) : null}
-          <a href={href}>Open reading</a>
-        </p>
-      ) : null}
-      {sections.length > 0 ? (
-        <ol className="uk-list uk-list-decimal">
-          {sections.map((section) => (
-            <li key={`${section.order}-${section.title}`}>
-              {section.title} <span className="muted">~{section.minutes} min</span>
-            </li>
-          ))}
-        </ol>
-      ) : null}
-    </div>
+          {sections.length > 0 ? (
+            <ul className="prepare-section-chips">
+              {sections.map((section) => (
+                <li key={`${section.order}-${section.title}`}>
+                  <span>{section.order}</span>
+                  {section.title}
+                  <em>~{section.minutes}m</em>
+                </li>
+              ))}
+            </ul>
+          ) : null}
+        </section>
+      )}
+    </form>
   );
 }

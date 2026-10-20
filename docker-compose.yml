@@ -109,6 +109,8 @@ services:
     container_name: qlu-kong
     image: kong:3.8
     restart: unless-stopped
+    # Clear leftover worker sockets so a recreate does not crash-loop on bind().
+    entrypoint: ["/bin/bash", "-c", "rm -f /usr/local/kong/sockets/*; /docker-entrypoint.sh kong docker-start"]
     depends_on:
       auth:
         condition: service_healthy
@@ -126,6 +128,12 @@ services:
       KONG_NGINX_PROXY_PROXY_BUFFERS: 64 160k
     volumes:
       - ./docker/kong.yml:/home/kong/kong.yml:ro
+    healthcheck:
+      test: ["CMD", "kong", "health"]
+      interval: 10s
+      timeout: 5s
+      retries: 6
+      start_period: 15s
 
   mail:
     container_name: qlu-mail

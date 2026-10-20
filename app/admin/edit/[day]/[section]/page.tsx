@@ -1,8 +1,7 @@
+import { Suspense } from "react";
 import { notFound } from "next/navigation";
-import { AdminNav } from "@/components/admin/AdminNav";
 import { SectionEditor } from "@/components/admin/SectionEditor";
-import { SitePage } from "@/components/SitePage";
-import { loadDay } from "@/lib/content";
+import { loadDayOutline, loadSection } from "@/lib/content";
 import type { Language } from "@/types/content";
 
 type Props = {
@@ -10,7 +9,7 @@ type Props = {
   searchParams: Promise<{ lang?: string; series?: string }>;
 };
 
-export default async function EditSectionPage({ params, searchParams }: Props) {
+async function EditBody({ params, searchParams }: Props) {
   const { day, section } = await params;
   const query = await searchParams;
   const dayNumber = Number(day);
@@ -19,30 +18,31 @@ export default async function EditSectionPage({ params, searchParams }: Props) {
   if (!Number.isInteger(dayNumber) || !Number.isInteger(sectionOrder)) notFound();
 
   const series = query.series || "jnanodayam";
-  const content = await loadDay(series, dayNumber, language);
-  const found = content?.sections.find((item) => item.sectionOrder === sectionOrder);
-  if (!content || !found) notFound();
+  const [outline, active] = await Promise.all([
+    loadDayOutline(series, dayNumber, language),
+    loadSection(series, dayNumber, language, sectionOrder),
+  ]);
+
+  if (!outline || !active) notFound();
 
   return (
-    <SitePage wide>
-      <div className="admin-shell">
-        <AdminNav />
-        <header className="admin-page-head">
-          <h1 className={language === "te" ? "lang-te" : undefined}>{found.title}</h1>
-          <p className="muted">
-            {content.seriesName} · Day {dayNumber} · {language === "te" ? "Telugu" : "English"}
-          </p>
-        </header>
-        <SectionEditor
-          key={`${series}-${dayNumber}-${language}-${found.sectionOrder}`}
-          series={series}
-          dayNumber={dayNumber}
-          language={language}
-          youtubeId={content.youtubeId}
-          section={found}
-          sections={content.sections}
-        />
-      </div>
-    </SitePage>
+    <SectionEditor
+      key={`${series}-${dayNumber}-${language}`}
+      series={series}
+      seriesName={outline.seriesName}
+      dayNumber={dayNumber}
+      language={language}
+      youtubeId={outline.youtubeId}
+      section={active}
+      sections={outline.sections}
+    />
+  );
+}
+
+export default function EditSectionPage(props: Props) {
+  return (
+    <Suspense fallback={<p className="muted">Loading section…</p>}>
+      <EditBody {...props} />
+    </Suspense>
   );
 }

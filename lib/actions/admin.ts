@@ -1,6 +1,7 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
+import { loadSection } from "@/lib/content";
 import { asParagraphs } from "@/lib/content/paragraphs";
 import { createClient } from "@/lib/supabase/server";
 import type { Language } from "@/types/content";
@@ -13,6 +14,17 @@ async function requireAdmin() {
   const { data: profile } = await supabase.from("profiles").select("role").eq("id", data.user.id).maybeSingle();
   if (profile?.role !== "admin") return { supabase, userId: null, error: "Only an admin can save sections." };
   return { supabase, userId: data.user.id, error: null };
+}
+
+export async function fetchSection(input: {
+  series: string;
+  dayNumber: number;
+  language: Language;
+  sectionOrder: number;
+}) {
+  const section = await loadSection(input.series, input.dayNumber, input.language, input.sectionOrder);
+  if (!section) return { ok: false as const, error: "That section was not found." };
+  return { ok: true as const, section };
 }
 
 export async function updateSection(input: {

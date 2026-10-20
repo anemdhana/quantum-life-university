@@ -10,7 +10,7 @@ import path from "node:path";
 import { fileURLToPath } from "node:url";
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
-const readerDir = path.join(root, "9-Day-Devi-Navaratri-Dr-Newton");
+const readerDir = path.join(root, "Swadhyaya", "9-Day-Devi-Navaratri-Dr-Newton");
 
 const sources = [
   {

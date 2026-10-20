@@ -27,4 +27,4 @@ Local sample accounts, also listed on the sign-in page:
 
 Passwords must be at least 12 characters and include a lowercase letter, an uppercase letter, a number, and a symbol. Change yours at [http://localhost:3000/account](http://localhost:3000/account). The current password is required. Open signup is off, so roles stay on the assigned accounts.
 
-`npm run content` rebuilds `content/day-08-*.json` and `supabase/seed.sql` from HTML readers under `9-Day-Devi-Navaratri-Dr-Newton/`.
+`npm run content` rebuilds `content/day-08-*.json` and `supabase/seed.sql` from HTML readers under `Swadhyaya/9-Day-Devi-Navaratri-Dr-Newton/`.

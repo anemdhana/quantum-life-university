@@ -6,7 +6,7 @@ import { DAY7_CHAPTERS, isDay7Transcript, sectionId, structureWithPlan } from ".
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
 const transcriptPath = path.join(
   root,
-  "..",
+  "Swadhyaya",
   "9-Day-Devi-Navaratri-Dr-Newton",
   "Transcripts",
   "day-7-youtube_transcript_TlWBXJ5zkfs.txt",

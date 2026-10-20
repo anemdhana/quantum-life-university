@@ -1,0 +1,388 @@
+.reader-app {
+  --paper: #fffdf8;
+  --ink: #352d26;
+  --gold: #a17b43;
+  --line: #e8dfd0;
+  position: fixed;
+  inset: 0;
+  display: grid;
+  grid-template-columns: 220px minmax(0, 1fr);
+  height: 100dvh;
+  background: var(--paper);
+  color: var(--ink);
+  overflow: hidden;
+}
+
+.reader-app.lang-en {
+  font-family: var(--font-sans-en), "Source Sans 3", sans-serif;
+}
+
+.reader-app.lang-te {
+  font-family: var(--font-sans-te), "Noto Sans Telugu", sans-serif;
+}
+
+.reader-app .side {
+  background: #f6f1e8;
+  border-right: 1px solid var(--line);
+  overflow-y: auto;
+  padding: 15px 8px;
+}
+
+.reader-app .brand {
+  display: block;
+  font: 600 10px system-ui, sans-serif;
+  letter-spacing: 0.12em;
+  color: var(--gold);
+  padding: 5px 9px;
+  text-decoration: none;
+}
+
+.reader-app .side h2 {
+  margin: 4px 9px 2px;
+  font-weight: 600;
+  font-size: 19px;
+}
+
+.reader-app.lang-en .side h2,
+.reader-app.lang-en .bar-title,
+.reader-app.lang-en .section-title {
+  font-family: var(--font-serif-en), "Libre Baskerville", serif;
+}
+
+.reader-app.lang-te .side h2,
+.reader-app.lang-te .bar-title,
+.reader-app.lang-te .section-title {
+  font-family: var(--font-serif-te), "Noto Serif Telugu", serif;
+}
+
+.reader-app .sub {
+  font-size: 11px;
+  color: #7c6e5d;
+  margin: 0 9px 13px;
+}
+
+.reader-app .nav {
+  padding: 0;
+  margin: 0;
+  list-style: none;
+}
+
+.reader-app .nav button {
+  width: 100%;
+  text-align: left;
+  border: 0;
+  background: transparent;
+  color: #514538;
+  display: flex;
+  gap: 8px;
+  align-items: flex-start;
+  padding: 8px 9px;
+  border-radius: 6px;
+  font: 400 12px/1.5 var(--font-sans-te), "Noto Sans Telugu", sans-serif;
+  cursor: pointer;
+}
+
+.reader-app .nav button:hover,
+.reader-app .nav button.active {
+  background: #e9dcc5;
+  color: #5e421f;
+}
+
+.reader-app .nav button.active {
+  font-weight: 700;
+  box-shadow: inset 3px 0 0 var(--gold);
+}
+
+.reader-app .nav .n {
+  font: 600 10px system-ui, sans-serif;
+  color: var(--gold);
+  padding-top: 3px;
+}
+
+.reader-app .nav small {
+  display: block;
+  color: #877965;
+  font: 10px system-ui, sans-serif;
+  margin-top: 3px;
+}
+
+.reader-app .main {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  min-height: 0;
+}
+
+.reader-app .bar {
+  min-height: 48px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  border-bottom: 1px solid var(--line);
+  padding: 4px 10px;
+  background: #faf6ef;
+}
+
+.reader-app .bar-title {
+  font-weight: 600;
+  font-size: 13px;
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+
+.reader-app .tools {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  flex-shrink: 0;
+}
+
+.reader-app .uk-button.uk-button-small {
+  font: 11px system-ui, sans-serif;
+  text-transform: none;
+  border-radius: 5px;
+  padding: 0 9px;
+  min-height: 29px;
+  line-height: 27px;
+}
+
+.reader-app .lang-switch a {
+  color: #786b59;
+  text-decoration: none;
+  font: 11px system-ui, sans-serif;
+  padding: 4px 6px;
+  border-radius: 4px;
+}
+
+.reader-app .lang-switch a.active {
+  color: #5e421f;
+  font-weight: 700;
+  background: #e9dcc5;
+}
+
+.reader-app .read-time {
+  color: #786b59;
+  font: 11px system-ui, sans-serif;
+  white-space: nowrap;
+}
+
+.reader-app .reader {
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+}
+
+.reader-app .spread {
+  flex: 1;
+  min-height: 0;
+  position: relative;
+  overflow: hidden;
+}
+
+.reader-app .columns {
+  height: 100%;
+  width: 100%;
+  overflow: hidden;
+  column-count: 2;
+  column-gap: 20px;
+  padding: 18px 10px 0;
+  column-fill: auto;
+  scroll-behavior: smooth;
+}
+
+.reader-app .listen-link {
+  display: inline-flex;
+  align-items: center;
+  margin-left: 0.35em;
+  font: 600 0.72em system-ui, sans-serif;
+  letter-spacing: 0.02em;
+  color: var(--gold);
+  text-decoration: none;
+  border-bottom: 1px dotted rgba(161, 123, 67, 0.55);
+  white-space: nowrap;
+}
+
+.reader-app .listen-link:hover {
+  color: #8b6840;
+}
+
+.reader-app .columns p {
+  font: 400 14px/1.73 var(--font-sans-te), "Noto Sans Telugu", sans-serif;
+  margin: 0 0 8px;
+  text-align: left;
+  overflow-wrap: anywhere;
+  break-inside: avoid-column;
+}
+
+.reader-app .section-title {
+  font-weight: 600;
+  font-size: 18px;
+  line-height: 1.6;
+  color: #6b4a25;
+  margin: 0 0 9px;
+  break-after: avoid-column;
+}
+
+.reader-app .columns mark {
+  background: #f3e2b8;
+  color: inherit;
+  padding: 0 1px;
+}
+
+.reader-app .spread:after {
+  content: "";
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  left: 50%;
+  width: 1px;
+  background: var(--line);
+  pointer-events: none;
+}
+
+.reader-app .bottom {
+  height: 43px;
+  border-top: 1px solid var(--line);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  padding: 0 10px;
+  background: #faf6ef;
+  font: 11px system-ui, sans-serif;
+  color: #6f6252;
+}
+
+.reader-app .bottom span {
+  flex: 1;
+  min-width: 0;
+  text-align: center;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.reader-app .bottom button {
+  flex-shrink: 0;
+  border: 1px solid #dbcbb6;
+  background: #fffdf8;
+  border-radius: 5px;
+  padding: 5px 11px;
+  color: #654c2f;
+  cursor: pointer;
+}
+
+.reader-app .bottom button:disabled {
+  opacity: 0.35;
+  cursor: default;
+}
+
+.reader-app .mobile,
+.reader-app .mobile-side {
+  display: none;
+}
+
+.reader-app .mobile-side.open {
+  display: block;
+  position: fixed;
+  z-index: 50;
+  top: 48px;
+  left: 0;
+  bottom: 0;
+  width: 230px;
+  overflow: auto;
+  background: #f6f1e8;
+  box-shadow: 3px 0 20px #0002;
+  padding: 10px;
+}
+
+.reader-app .status {
+  color: #786b59;
+  font: 11px system-ui, sans-serif;
+  max-width: 180px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.reader-app.font-large .columns p {
+  font-size: 16px;
+  line-height: 1.8;
+}
+
+.reader-app.font-large .section-title {
+  font-size: 20px;
+}
+
+.hl-toolbar {
+  position: fixed;
+  z-index: 70;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  align-items: center;
+  max-width: min(420px, calc(100vw - 16px));
+  padding: 8px;
+  background: #fffdf8;
+  border: 1px solid #e8dfd0;
+  border-radius: 8px;
+  box-shadow: 0 8px 24px #352d2614;
+}
+
+.hl-toolbar textarea {
+  width: 100%;
+  min-height: 64px;
+  font: 13px/1.5 var(--font-sans-te), "Noto Sans Telugu", sans-serif;
+}
+
+.hl-note {
+  margin: 4px 0 0;
+  color: #6f6252;
+  font: 12px system-ui, sans-serif;
+}
+
+@media (max-width: 800px) {
+  .reader-app {
+    grid-template-columns: 1fr;
+  }
+
+  .reader-app .side {
+    display: none;
+  }
+
+  .reader-app .mobile {
+    display: inline-block;
+  }
+
+  .reader-app .columns {
+    column-count: 1;
+  }
+
+  .reader-app .spread:after {
+    display: none;
+  }
+
+  .reader-app .bar {
+    flex-wrap: wrap;
+    align-items: flex-start;
+  }
+
+  .reader-app .bar-title {
+    max-width: none;
+  }
+
+  .reader-app .tools {
+    width: 100%;
+    justify-content: flex-end;
+  }
+}
+
+@media (min-width: 801px) and (max-width: 1100px) {
+  .reader-app .columns p {
+    font-size: 13px;
+    line-height: 1.65;
+  }
+}

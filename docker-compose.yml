@@ -1,0 +1,172 @@
+# Local Supabase for the QLU reader.
+# Required for the app: db, auth, rest, kong, migrator
+# Optional: mail (magic-link / recovery emails at http://localhost:8025)
+# Not included: Studio + postgres-meta (DB UI only; use psql or any SQL client on 54332)
+#
+# From this directory: docker compose up -d
+# API:  http://localhost:54331
+# Mail: http://localhost:8025
+
+name: qlu
+
+services:
+  db:
+    container_name: qlu-db
+    image: supabase/postgres:17.6.1.136
+    restart: unless-stopped
+    ports:
+      - "54332:5432"
+    volumes:
+      - qlu_db:/var/lib/postgresql/data
+      - db_config:/etc/postgresql-custom
+      - ./docker/db/roles.sql:/docker-entrypoint-initdb.d/init-scripts/99-roles.sql:ro
+      - ./docker/db/jwt.sql:/docker-entrypoint-initdb.d/init-scripts/99-jwt.sql:ro
+    healthcheck:
+      test: ["CMD", "pg_isready", "-U", "postgres", "-h", "localhost"]
+      interval: 5s
+      timeout: 5s
+      retries: 20
+      start_period: 20s
+    environment:
+      POSTGRES_HOST: /var/run/postgresql
+      POSTGRES_PORT: 5432
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      POSTGRES_DB: postgres
+      JWT_EXP: ${JWT_EXPIRY}
+    command:
+      - postgres
+      - -c
+      - config_file=/etc/postgresql/postgresql.conf
+      - -c
+      - log_min_messages=fatal
+
+  auth:
+    container_name: qlu-auth
+    image: supabase/gotrue:v2.197.0
+    restart: unless-stopped
+    depends_on:
+      db:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:9999/health"]
+      interval: 5s
+      timeout: 5s
+      retries: 12
+      start_period: 20s
+    environment:
+      GOTRUE_API_HOST: 0.0.0.0
+      GOTRUE_API_PORT: 9999
+      API_EXTERNAL_URL: ${API_EXTERNAL_URL}
+      GOTRUE_DB_DRIVER: postgres
+      # Auth admin + search_path=auth so GoTrue migrates/uses auth.* (not the old public tables).
+      GOTRUE_DB_DATABASE_URL: postgres://supabase_auth_admin:${POSTGRES_PASSWORD}@db:5432/postgres?search_path=auth
+      GOTRUE_DB_AUTOMIGRATE: "true"
+      GOTRUE_SITE_URL: ${SITE_URL}
+      GOTRUE_URI_ALLOW_LIST: ${ADDITIONAL_REDIRECT_URLS}
+      GOTRUE_DISABLE_SIGNUP: "true"
+      GOTRUE_PASSWORD_MIN_LENGTH: "12"
+      GOTRUE_PASSWORD_REQUIRED_CHARACTERS: "abcdefghijklmnopqrstuvwxyz:ABCDEFGHIJKLMNOPQRSTUVWXYZ:0123456789:!@#$%^&*()-_=+"
+      GOTRUE_SECURITY_UPDATE_PASSWORD_REQUIRE_CURRENT_PASSWORD: "true"
+      GOTRUE_JWT_ADMIN_ROLES: service_role
+      GOTRUE_JWT_AUD: authenticated
+      GOTRUE_JWT_DEFAULT_GROUP_NAME: authenticated
+      GOTRUE_JWT_EXP: ${JWT_EXPIRY}
+      GOTRUE_JWT_SECRET: ${JWT_SECRET}
+      GOTRUE_JWT_ISSUER: ${API_EXTERNAL_URL}
+      GOTRUE_EXTERNAL_EMAIL_ENABLED: "true"
+      GOTRUE_MAILER_AUTOCONFIRM: "true"
+      GOTRUE_SMTP_ADMIN_EMAIL: ${SMTP_ADMIN_EMAIL}
+      GOTRUE_SMTP_HOST: mail
+      GOTRUE_SMTP_PORT: 1025
+      GOTRUE_SMTP_USER: ${SMTP_USER}
+      GOTRUE_SMTP_PASS: ${SMTP_PASS}
+      GOTRUE_SMTP_SENDER_NAME: ${SMTP_SENDER_NAME}
+      GOTRUE_MAILER_URLPATHS_INVITE: /auth/v1/verify
+      GOTRUE_MAILER_URLPATHS_CONFIRMATION: /auth/v1/verify
+      GOTRUE_MAILER_URLPATHS_RECOVERY: /auth/v1/verify
+      GOTRUE_MAILER_URLPATHS_EMAIL_CHANGE: /auth/v1/verify
+      GOTRUE_EXTERNAL_PHONE_ENABLED: "false"
+
+  rest:
+    container_name: qlu-rest
+    image: postgrest/postgrest:v14.18
+    restart: unless-stopped
+    depends_on:
+      db:
+        condition: service_healthy
+      migrator:
+        condition: service_completed_successfully
+    environment:
+      PGRST_DB_URI: postgres://authenticator:${POSTGRES_PASSWORD}@db:5432/postgres
+      PGRST_DB_SCHEMAS: public
+      PGRST_DB_ANON_ROLE: anon
+      PGRST_DB_EXTRA_SEARCH_PATH: public
+      PGRST_JWT_SECRET: ${JWT_SECRET}
+      PGRST_DB_USE_LEGACY_GUCS: "false"
+      PGRST_APP_SETTINGS_JWT_EXP: ${JWT_EXPIRY}
+
+  kong:
+    container_name: qlu-kong
+    image: kong:3.8
+    restart: unless-stopped
+    depends_on:
+      auth:
+        condition: service_healthy
+      rest:
+        condition: service_started
+    ports:
+      - "54331:8000"
+    environment:
+      KONG_DATABASE: "off"
+      KONG_DECLARATIVE_CONFIG: /home/kong/kong.yml
+      KONG_PROXY_LISTEN: 0.0.0.0:8000
+      KONG_DNS_ORDER: LAST,A,CNAME
+      KONG_PLUGINS: bundled
+      KONG_NGINX_PROXY_PROXY_BUFFER_SIZE: 160k
+      KONG_NGINX_PROXY_PROXY_BUFFERS: 64 160k
+    volumes:
+      - ./docker/kong.yml:/home/kong/kong.yml:ro
+
+  mail:
+    container_name: qlu-mail
+    image: axllent/mailpit:v1.21
+    restart: unless-stopped
+    ports:
+      - "8025:8025"
+
+  migrator:
+    container_name: qlu-migrator
+    image: supabase/postgres:17.6.1.136
+    depends_on:
+      db:
+        condition: service_healthy
+      auth:
+        condition: service_healthy
+    environment:
+      PGPASSWORD: ${POSTGRES_PASSWORD}
+    volumes:
+      - ./supabase/migrations/20261019120000_init.sql:/sql/init.sql:ro
+      - ./supabase/seed.sql:/sql/seed.sql:ro
+      - ./supabase/seed-users.sql:/sql/seed-users.sql:ro
+      - ./supabase/migrations/20261019140000_series.sql:/sql/series.sql:ro
+      - ./supabase/migrations/20261020130000_youtube.sql:/sql/youtube.sql:ro
+      - ./supabase/migrations/20261020140000_section_start.sql:/sql/section_start.sql:ro
+    entrypoint: ["sh", "-c"]
+    command:
+      - |
+        set -eu
+        until pg_isready -h db -U postgres; do sleep 1; done
+        # Wait until GoTrue has migrated a modern auth schema.
+        until psql -h db -U postgres -d postgres -tAc "select 1 from information_schema.columns where table_schema='auth' and table_name='refresh_tokens' and column_name='parent'" | grep -q 1; do sleep 2; done
+        until psql -h db -U postgres -d postgres -c "select 1 from auth.users limit 0"; do sleep 2; done
+        psql -h db -U postgres -d postgres -v ON_ERROR_STOP=1 -f /sql/init.sql
+        psql -h db -U postgres -d postgres -v ON_ERROR_STOP=1 -f /sql/series.sql
+        psql -h db -U postgres -d postgres -v ON_ERROR_STOP=1 -f /sql/youtube.sql
+        psql -h db -U postgres -d postgres -v ON_ERROR_STOP=1 -f /sql/section_start.sql
+        psql -h db -U postgres -d postgres -v ON_ERROR_STOP=1 -f /sql/seed.sql
+        psql -h db -U postgres -d postgres -v ON_ERROR_STOP=1 -f /sql/seed-users.sql
+    restart: "no"
+
+volumes:
+  qlu_db:
+  db_config:

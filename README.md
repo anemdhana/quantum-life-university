@@ -1,0 +1,30 @@
+# Quantum Life University — Self Knowledge Reading
+
+Next.js reader for Dr. Newton’s Devi Navaratri discourses. Day 7–8 sample content is included and works before Supabase is connected.
+
+Double-click `start.cmd` to bring up Docker Supabase, start the app, and open [http://localhost:3000](http://localhost:3000).
+
+```bash
+npm run dev
+```
+
+Local Supabase is in `docker-compose.yml`. Copy `.env.example` to `.env` (or let `start.cmd` do it).
+
+```bash
+docker compose up -d
+```
+
+The API is at [http://localhost:54331](http://localhost:54331). Mailpit (optional email catcher) is at [http://localhost:8025](http://localhost:8025). Containers are named `qlu-db`, `qlu-auth`, `qlu-rest`, `qlu-kong`, `qlu-mail`, `qlu-migrator`. Studio is not started; use Postgres on `localhost:54332` if you need SQL access. The first start applies migrations and seeds. Restart `npm run dev` after changing `.env`.
+
+If an older Compose project is still running: `docker compose down` then `docker compose up -d`.
+
+Local sample accounts, also listed on the sign-in page:
+
+| Email | Password | Role |
+| --- | --- | --- |
+| admin@qlu.local | Lotus-River-Admin-2026! | admin |
+| reader@qlu.local | Lotus-River-Reader-2026! | reader |
+
+Passwords must be at least 12 characters and include a lowercase letter, an uppercase letter, a number, and a symbol. Change yours at [http://localhost:3000/account](http://localhost:3000/account). The current password is required. Open signup is off, so roles stay on the assigned accounts.
+
+`npm run content` rebuilds `content/day-08-*.json` and `supabase/seed.sql` from HTML readers under `9-Day-Devi-Navaratri-Dr-Newton/`.

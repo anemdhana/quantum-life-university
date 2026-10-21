@@ -15,7 +15,19 @@ export type NewsletterSectionTitle = (typeof NEWSLETTER_SECTION_TITLES)[number];
 /** Default title for new assets — reusable across any newsletter body section. */
 export const DEFAULT_NEWSLETTER_SECTION_TITLE: NewsletterSectionTitle = "Global Assets";
 
-/** Short editor guidance shown under each section title in the wizard. */
+/** Short labels for the admin left nav. */
+export const NEWSLETTER_SECTION_NAV: Record<NewsletterSectionTitle, string> = {
+  "Global Assets": "Global Assets",
+  "Summary of the themes covered in that month": "Themes",
+  "Highlight classes of the month": "Highlight classes",
+  "Few Experiences from Participants": "Experiences",
+  "Dr. Newton's visits and classes in other places": "Visits & classes",
+  "Vanya Maitreya Highlights": "Vanya Maitreya",
+  "Goloka, Sahasrara and QLU Updates": "Goloka · Sahasrara · QLU",
+  "Upcoming Programs/Announcements": "Upcoming",
+};
+
+/** Short editor guidance under the selected section. */
 export const NEWSLETTER_SECTION_HINTS: Record<NewsletterSectionTitle, string> = {
   "Global Assets":
     "Shared photos usable in any body section (masthead, campus, travel, etc.). Not a printed heading — editors place these where they fit.",

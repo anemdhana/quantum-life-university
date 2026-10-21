@@ -1,42 +1,19 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useMemo, useRef, useState } from "react";
 import {
   createNewsletterAsset,
+  deleteNewsletterAsset,
   updateNewsletterAsset,
   type NewsletterAssetListItem,
 } from "@/lib/actions/newsletter";
 import {
   DEFAULT_NEWSLETTER_SECTION_TITLE,
   NEWSLETTER_SECTION_HINTS,
+  NEWSLETTER_SECTION_NAV,
   NEWSLETTER_SECTION_TITLES,
   type NewsletterSectionTitle,
 } from "@/lib/newsletter/sections";
-
-type StepId = "section" | "photo" | "caption" | "when";
-
-const STEPS: Array<{ id: StepId; title: string; summary: string }> = [
-  {
-    id: "section",
-    title: "Section",
-    summary: "Defaults to Global Assets (any section). Or pick a specific body section.",
-  },
-  {
-    id: "photo",
-    title: "Photo",
-    summary: "Upload the snapshot used in the PDF (JPEG, PNG, or WebP · max 5 MB).",
-  },
-  {
-    id: "caption",
-    title: "Caption",
-    summary: "Long label becomes the PDF caption; summary is editorial context for AI.",
-  },
-  {
-    id: "when",
-    title: "Date",
-    summary: "When the photo was taken — helps filter the global library by month.",
-  },
-];
 
 function todayLocalIsoDate() {
   const now = new Date();
@@ -46,348 +23,341 @@ function todayLocalIsoDate() {
   return `${y}-${m}-${d}`;
 }
 
-function emptyDraft(title: NewsletterSectionTitle = DEFAULT_NEWSLETTER_SECTION_TITLE) {
-  return {
-    id: null as string | null,
-    title,
-    label: "",
-    summary: "",
-    takenOn: todayLocalIsoDate(),
-    imageUrl: null as string | null,
-    imageName: null as string | null,
-    imageFile: null as File | null,
-  };
+function labelFromFilename(name: string) {
+  const base = name.replace(/\.[^.]+$/, "").replace(/[_-]+/g, " ").trim();
+  return base.length >= 2 ? base : "New photo";
+}
+
+function AssetDetailModal({
+  asset,
+  pending,
+  message,
+  onClose,
+  onSave,
+  onRemove,
+}: {
+  asset: NewsletterAssetListItem;
+  pending: boolean;
+  message: string | null;
+  onClose: () => void;
+  onSave: (input: {
+    title: NewsletterSectionTitle;
+    label: string;
+    summary: string;
+    takenOn: string;
+    imageFile: File | null;
+  }) => Promise<void>;
+  onRemove: () => Promise<void>;
+}) {
+  const [title, setTitle] = useState(asset.title);
+  const [label, setLabel] = useState(asset.label);
+  const [summary, setSummary] = useState(asset.summary);
+  const [takenOn, setTakenOn] = useState(asset.takenOn);
+  const [imageFile, setImageFile] = useState<File | null>(null);
+  const [previewUrl, setPreviewUrl] = useState(asset.imageUrl);
+
+  return (
+    <div className="admin-modal-backdrop" role="presentation" onClick={onClose}>
+      <div
+        className="admin-modal newsletter-detail-modal"
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="newsletter-detail-title"
+        onClick={(event) => event.stopPropagation()}
+      >
+        <div className="admin-modal-head">
+          <h2 id="newsletter-detail-title">Photo details</h2>
+          <button type="button" className="admin-text-link" onClick={onClose} disabled={pending}>
+            Close
+          </button>
+        </div>
+
+        <div className="newsletter-detail-preview">
+          <img src={previewUrl} alt="" />
+        </div>
+
+        <label className="newsletter-field">
+          <span>Section</span>
+          <select className="uk-select" value={title} onChange={(event) => setTitle(event.target.value as NewsletterSectionTitle)}>
+            {NEWSLETTER_SECTION_TITLES.map((item) => (
+              <option key={item} value={item}>
+                {item}
+              </option>
+            ))}
+          </select>
+        </label>
+
+        <label className="newsletter-field">
+          <span>Long label</span>
+          <textarea
+            className="uk-textarea lang-te"
+            rows={3}
+            value={label}
+            onChange={(event) => setLabel(event.target.value)}
+            placeholder="Caption for the PDF"
+          />
+        </label>
+
+        <label className="newsletter-field">
+          <span>Summary</span>
+          <textarea
+            className="uk-textarea lang-te"
+            rows={2}
+            value={summary}
+            onChange={(event) => setSummary(event.target.value)}
+            placeholder="Who, where, why it matters"
+          />
+        </label>
+
+        <div className="newsletter-detail-row">
+          <label className="newsletter-field">
+            <span>Date taken</span>
+            <input className="uk-input" type="date" value={takenOn} onChange={(event) => setTakenOn(event.target.value)} />
+          </label>
+          <label className="newsletter-field">
+            <span>Replace photo</span>
+            <input
+              type="file"
+              accept="image/jpeg,image/png,image/webp"
+              onChange={(event) => {
+                const file = event.target.files?.[0] ?? null;
+                setImageFile(file);
+                if (file) setPreviewUrl(URL.createObjectURL(file));
+              }}
+            />
+          </label>
+        </div>
+
+        {message ? <p className={/updated|saved/i.test(message) ? "muted" : "uk-text-danger"}>{message}</p> : null}
+
+        <div className="admin-modal-actions newsletter-detail-actions">
+          <button
+            type="button"
+            className="admin-text-danger"
+            disabled={pending}
+            onClick={() => {
+              if (!window.confirm("Remove this photo from the newsletter library? This cannot be undone.")) return;
+              void onRemove();
+            }}
+          >
+            Remove photo
+          </button>
+          <button type="button" className="uk-button uk-button-default uk-button-small" onClick={onClose} disabled={pending}>
+            Cancel
+          </button>
+          <button
+            type="button"
+            className="uk-button uk-button-primary uk-button-small"
+            disabled={pending}
+            onClick={() => void onSave({ title, label, summary, takenOn, imageFile })}
+          >
+            {pending ? "Saving…" : "Save"}
+          </button>
+        </div>
+      </div>
+    </div>
+  );
 }
 
 export function NewsletterAssetForm({ initialAssets }: { initialAssets: NewsletterAssetListItem[] }) {
+  const fileInputRef = useRef<HTMLInputElement>(null);
   const [assets, setAssets] = useState(initialAssets);
-  const [draft, setDraft] = useState(() => emptyDraft());
-  const [stepIndex, setStepIndex] = useState(0);
-  const [message, setMessage] = useState<string | null>(null);
+  const [section, setSection] = useState<NewsletterSectionTitle>(DEFAULT_NEWSLETTER_SECTION_TITLE);
+  const [query, setQuery] = useState("");
+  const [selectedId, setSelectedId] = useState<string | null>(null);
   const [pending, setPending] = useState(false);
-  const [filterTitle, setFilterTitle] = useState<"" | NewsletterSectionTitle>("");
+  const [uploadMessage, setUploadMessage] = useState<string | null>(null);
+  const [detailMessage, setDetailMessage] = useState<string | null>(null);
 
-  const step = STEPS[stepIndex] ?? STEPS[0];
-  const editing = Boolean(draft.id);
-  const sectionHint = draft.title ? NEWSLETTER_SECTION_HINTS[draft.title] : null;
+  const counts = useMemo(() => {
+    const map = new Map<NewsletterSectionTitle, number>();
+    for (const title of NEWSLETTER_SECTION_TITLES) map.set(title, 0);
+    for (const asset of assets) map.set(asset.title, (map.get(asset.title) ?? 0) + 1);
+    return map;
+  }, [assets]);
 
-  const visibleAssets = useMemo(() => {
-    if (!filterTitle) return assets;
-    return assets.filter((asset) => asset.title === filterTitle);
-  }, [assets, filterTitle]);
-
-  function resetForm(nextTitle: NewsletterSectionTitle = DEFAULT_NEWSLETTER_SECTION_TITLE) {
-    setDraft(emptyDraft(nextTitle));
-    setStepIndex(0);
-  }
-
-  function startEdit(asset: NewsletterAssetListItem) {
-    setDraft({
-      id: asset.id,
-      title: asset.title,
-      label: asset.label,
-      summary: asset.summary,
-      takenOn: asset.takenOn,
-      imageUrl: asset.imageUrl,
-      imageName: null,
-      imageFile: null,
+  const sectionAssets = useMemo(() => {
+    const inSection = assets.filter((asset) => asset.title === section);
+    const needle = query.trim().toLowerCase();
+    if (!needle) return inSection;
+    return inSection.filter((asset) => {
+      const haystack = [asset.title, asset.label, asset.summary, asset.takenOn].join("\n").toLowerCase();
+      return haystack.includes(needle);
     });
-    setStepIndex(0);
-    setMessage(null);
-  }
+  }, [assets, section, query]);
 
-  function validateStep(index: number): string | null {
-    const current = STEPS[index];
-    if (!current) return null;
-    if (current.id === "section" && !draft.title) return "Choose a newsletter section title.";
-    if (current.id === "photo" && !draft.imageFile && !draft.imageUrl) return "Upload a photo snapshot.";
-    if (current.id === "caption") {
-      if (draft.label.trim().length < 2) return "Enter a long label / caption.";
-      if (draft.summary.trim().length < 2) return "Enter a short summary.";
-    }
-    if (current.id === "when" && !/^\d{4}-\d{2}-\d{2}$/.test(draft.takenOn)) {
-      return "Date taken must be YYYY-MM-DD.";
-    }
-    return null;
-  }
+  const selected = selectedId ? assets.find((asset) => asset.id === selectedId) ?? null : null;
 
-  function goNext() {
-    const error = validateStep(stepIndex);
-    if (error) {
-      setMessage(error);
+  async function uploadFiles(files: FileList | File[]) {
+    const list = Array.from(files).filter((file) => file.type.startsWith("image/"));
+    if (list.length === 0) {
+      setUploadMessage("Choose JPEG, PNG, or WebP images.");
       return;
-    }
-    setMessage(null);
-    setStepIndex((value) => Math.min(value + 1, STEPS.length - 1));
-  }
-
-  function goBack() {
-    setMessage(null);
-    setStepIndex((value) => Math.max(value - 1, 0));
-  }
-
-  async function onSave() {
-    for (let index = 0; index < STEPS.length; index += 1) {
-      const error = validateStep(index);
-      if (error) {
-        setStepIndex(index);
-        setMessage(error);
-        return;
-      }
     }
 
     setPending(true);
-    setMessage(null);
-    const data = new FormData();
-    if (draft.id) data.set("id", draft.id);
-    data.set("title", draft.title);
-    data.set("label", draft.label);
-    data.set("summary", draft.summary);
-    data.set("takenOn", draft.takenOn);
-    if (draft.imageFile) data.set("image", draft.imageFile);
+    setUploadMessage(null);
+    const takenOn = todayLocalIsoDate();
+    const created: NewsletterAssetListItem[] = [];
+    const errors: string[] = [];
 
-    const result = draft.id ? await updateNewsletterAsset(data) : await createNewsletterAsset(data);
-    setPending(false);
-    if (!result.ok) {
-      setMessage(result.error);
-      return;
+    for (const file of list) {
+      const data = new FormData();
+      data.set("title", section);
+      data.set("label", labelFromFilename(file.name));
+      data.set("summary", "Add summary…");
+      data.set("takenOn", takenOn);
+      data.set("image", file);
+      const result = await createNewsletterAsset(data);
+      if (result.ok) created.push(result.asset);
+      else errors.push(`${file.name}: ${result.error}`);
     }
 
-    setAssets((current) => {
-      const without = current.filter((item) => item.id !== result.asset.id);
-      return [result.asset, ...without];
-    });
-    setMessage(draft.id ? "Asset updated." : "Asset saved.");
-    resetForm(draft.title);
+    if (created.length) {
+      setAssets((current) => [...created, ...current]);
+      setSelectedId(created[0]?.id ?? null);
+    }
+    setPending(false);
+    setUploadMessage(
+      errors.length
+        ? `Uploaded ${created.length}. ${errors[0]}`
+        : `Uploaded ${created.length} photo${created.length === 1 ? "" : "s"}.`,
+    );
+    if (fileInputRef.current) fileInputRef.current.value = "";
+  }
+
+  async function saveDetails(input: {
+    title: NewsletterSectionTitle;
+    label: string;
+    summary: string;
+    takenOn: string;
+    imageFile: File | null;
+  }) {
+    if (!selected) return;
+    setPending(true);
+    setDetailMessage(null);
+    const data = new FormData();
+    data.set("id", selected.id);
+    data.set("title", input.title);
+    data.set("label", input.label);
+    data.set("summary", input.summary);
+    data.set("takenOn", input.takenOn);
+    if (input.imageFile) data.set("image", input.imageFile);
+    const result = await updateNewsletterAsset(data);
+    setPending(false);
+    if (!result.ok) {
+      setDetailMessage(result.error);
+      return;
+    }
+    setAssets((current) => current.map((item) => (item.id === result.asset.id ? result.asset : item)));
+    if (result.asset.title !== section) setSection(result.asset.title);
+    setDetailMessage("Asset updated.");
+    setSelectedId(null);
+  }
+
+  async function removeSelected() {
+    if (!selected) return;
+    const assetId = selected.id;
+    setPending(true);
+    setDetailMessage(null);
+    const result = await deleteNewsletterAsset({ id: assetId });
+    setPending(false);
+    if (!result.ok) {
+      setDetailMessage(result.error);
+      return;
+    }
+    setAssets((current) => current.filter((item) => item.id !== assetId));
+    setSelectedId(null);
+    setDetailMessage(null);
+    setUploadMessage("Photo removed.");
   }
 
   return (
-    <div className="newsletter-board">
-      <section className="prepare-tile newsletter-wizard">
-        <div className="newsletter-wizard-head">
-          <div>
-            <h2>{editing ? "Update asset" : "Add asset"}</h2>
-            <p className="prepare-hint muted">
-              Global library — one section title, photo, caption, and date. Step through each group.
-            </p>
-          </div>
-          {editing ? (
-            <button type="button" className="admin-text-link" onClick={() => resetForm()} disabled={pending}>
-              New asset
-            </button>
-          ) : null}
-        </div>
-
-        <ol className="newsletter-steps" aria-label="Asset steps">
-          {STEPS.map((item, index) => {
-            const state = index === stepIndex ? "active" : index < stepIndex ? "done" : undefined;
+    <div className="newsletter-shell">
+      <aside className="newsletter-section-nav" aria-label="Newsletter sections">
+        <p className="admin-panel-label">Sections</p>
+        <ul>
+          {NEWSLETTER_SECTION_TITLES.map((title) => {
+            const count = counts.get(title) ?? 0;
             return (
-              <li key={item.id}>
+              <li key={title}>
                 <button
                   type="button"
-                  className={state}
-                  disabled={pending}
+                  className={section === title ? "active" : undefined}
                   onClick={() => {
-                    if (index > stepIndex) {
-                      const error = validateStep(stepIndex);
-                      if (error) {
-                        setMessage(error);
-                        return;
-                      }
-                    }
-                    setMessage(null);
-                    setStepIndex(index);
+                    setSection(title);
+                    setQuery("");
+                    setSelectedId(null);
+                    setUploadMessage(null);
                   }}
                 >
-                  <span className="newsletter-step-num">{index + 1}</span>
-                  <span>{item.title}</span>
+                  <strong>{NEWSLETTER_SECTION_NAV[title]}</strong>
+                  <span>{count}</span>
                 </button>
               </li>
             );
           })}
-        </ol>
+        </ul>
+      </aside>
 
-        <div className="newsletter-step-panel">
-          <h3>{step.title}</h3>
-          <p className="muted newsletter-step-summary">{step.summary}</p>
-
-          {step.id === "section" ? (
-            <label className="newsletter-field">
-              <span>Section title</span>
-              <select
-                className="uk-select"
-                value={draft.title}
-                onChange={(event) =>
-                  setDraft((current) => ({
-                    ...current,
-                    title: event.target.value as NewsletterSectionTitle,
-                  }))
-                }
-                required
-              >
-                {NEWSLETTER_SECTION_TITLES.map((title) => (
-                  <option key={title} value={title}>
-                    {title}
-                  </option>
-                ))}
-              </select>
-              {sectionHint ? <em className="muted newsletter-field-hint">{sectionHint}</em> : null}
-            </label>
-          ) : null}
-
-          {step.id === "photo" ? (
-            <div className="newsletter-field">
-              <span>Photo snapshot</span>
-              {draft.imageUrl ? (
-                <div className="newsletter-photo-preview">
-                  <img src={draft.imageUrl} alt="" />
-                  <p className="muted">{editing && !draft.imageFile ? "Current image — upload only to replace." : "Preview"}</p>
-                </div>
-              ) : null}
+      <section className="newsletter-section-panel">
+        <header className="newsletter-section-head">
+          <div>
+            <h2>{section}</h2>
+            <p className="muted newsletter-section-hint">{NEWSLETTER_SECTION_HINTS[section]}</p>
+          </div>
+          <div className="newsletter-toolbar">
+            <label className="newsletter-search">
+              <span className="uk-hidden">Search in section</span>
               <input
+                className="uk-input"
+                type="search"
+                value={query}
+                onChange={(event) => setQuery(event.target.value)}
+                placeholder="Search label, summary, date…"
+              />
+            </label>
+            <label className="uk-button uk-button-primary uk-button-small newsletter-upload-btn">
+              {pending ? "Uploading…" : "Upload photos"}
+              <input
+                ref={fileInputRef}
                 type="file"
                 accept="image/jpeg,image/png,image/webp"
+                multiple
+                disabled={pending}
                 onChange={(event) => {
-                  const file = event.target.files?.[0] ?? null;
-                  if (!file) {
-                    setDraft((current) => ({
-                      ...current,
-                      imageFile: null,
-                      imageName: null,
-                      imageUrl: current.id ? current.imageUrl : null,
-                    }));
-                    return;
-                  }
-                  const url = URL.createObjectURL(file);
-                  setDraft((current) => ({
-                    ...current,
-                    imageFile: file,
-                    imageName: file.name,
-                    imageUrl: url,
-                  }));
+                  const files = event.target.files;
+                  if (files?.length) void uploadFiles(files);
                 }}
               />
-              {draft.imageName ? <em className="muted">{draft.imageName}</em> : null}
-            </div>
-          ) : null}
+            </label>
+            {uploadMessage ? (
+              <span className={/uploaded|removed/i.test(uploadMessage) ? "muted" : "uk-text-danger"}>{uploadMessage}</span>
+            ) : (
+              <span className="muted">Multi-select uploads into this section.</span>
+            )}
+          </div>
+        </header>
 
-          {step.id === "caption" ? (
-            <div className="newsletter-caption-fields">
-              <label className="newsletter-field">
-                <span>Long label</span>
-                <textarea
-                  className="uk-textarea lang-te"
-                  rows={4}
-                  value={draft.label}
-                  onChange={(event) => setDraft((current) => ({ ...current, label: event.target.value }))}
-                  placeholder="Caption text for the PDF (Telugu OK)"
-                  required
-                />
-              </label>
-              <label className="newsletter-field">
-                <span>Summary</span>
-                <textarea
-                  className="uk-textarea lang-te"
-                  rows={3}
-                  value={draft.summary}
-                  onChange={(event) => setDraft((current) => ({ ...current, summary: event.target.value }))}
-                  placeholder="Short context: who, where, why it matters under this section"
-                  required
-                />
-              </label>
-            </div>
-          ) : null}
-
-          {step.id === "when" ? (
-            <div className="newsletter-review">
-              <label className="newsletter-field">
-                <span>Date taken</span>
-                <input
-                  className="uk-input"
-                  type="date"
-                  required
-                  value={draft.takenOn}
-                  onChange={(event) => setDraft((current) => ({ ...current, takenOn: event.target.value }))}
-                />
-              </label>
-              <dl className="newsletter-review-card">
-                <div>
-                  <dt>Section</dt>
-                  <dd>{draft.title || "—"}</dd>
-                </div>
-                <div>
-                  <dt>Label</dt>
-                  <dd className="lang-te">{draft.label.trim() || "—"}</dd>
-                </div>
-                <div>
-                  <dt>Summary</dt>
-                  <dd className="lang-te">{draft.summary.trim() || "—"}</dd>
-                </div>
-              </dl>
-            </div>
-          ) : null}
-        </div>
-
-        <div className="newsletter-wizard-actions">
-          <button
-            type="button"
-            className="uk-button uk-button-default uk-button-small"
-            onClick={goBack}
-            disabled={pending || stepIndex === 0}
-          >
-            Back
-          </button>
-          {stepIndex < STEPS.length - 1 ? (
-            <button type="button" className="uk-button uk-button-primary uk-button-small" onClick={goNext} disabled={pending}>
-              Next
-            </button>
-          ) : (
-            <button type="button" className="uk-button uk-button-primary uk-button-small" onClick={() => void onSave()} disabled={pending}>
-              {pending ? "Saving…" : editing ? "Update asset" : "Save asset"}
-            </button>
-          )}
-          {message ? (
-            <span className={/saved|updated/i.test(message) ? "muted" : "uk-text-danger"}>{message}</span>
-          ) : null}
-        </div>
-      </section>
-
-      <section className="prepare-tile prepare-tile-wide">
-        <div className="newsletter-library-head">
-          <h2>Library ({visibleAssets.length})</h2>
-          <label className="newsletter-filter">
-            <span className="uk-hidden">Filter section</span>
-            <select
-              className="uk-select"
-              value={filterTitle}
-              onChange={(event) => setFilterTitle(event.target.value as "" | NewsletterSectionTitle)}
-            >
-              <option value="">All sections</option>
-              {NEWSLETTER_SECTION_TITLES.map((title) => (
-                <option key={title} value={title}>
-                  {title}
-                </option>
-              ))}
-            </select>
-          </label>
-        </div>
-        {visibleAssets.length === 0 ? (
-          <p className="muted">No assets yet. Add the first photo with the wizard.</p>
+        {sectionAssets.length === 0 ? (
+          <p className="muted newsletter-empty">
+            {query.trim()
+              ? "No photos match that search in this section."
+              : "No photos in this section yet. Upload to start the list."}
+          </p>
         ) : (
-          <ul className="newsletter-asset-list">
-            {visibleAssets.map((asset) => (
+          <ul className="newsletter-photo-list">
+            {sectionAssets.map((asset) => (
               <li key={asset.id}>
-                <button
-                  type="button"
-                  className={`newsletter-asset-card ${draft.id === asset.id ? "active" : ""}`}
-                  onClick={() => startEdit(asset)}
-                >
-                  <img src={asset.imageUrl} alt="" />
-                  <div>
+                <button type="button" className="newsletter-photo-row" onClick={() => setSelectedId(asset.id)}>
+                  <div className="newsletter-photo-media">
+                    <img src={asset.imageUrl} alt="" />
+                  </div>
+                  <div className="newsletter-photo-copy">
                     <strong>{asset.title}</strong>
-                    <p className="muted">{asset.takenOn}</p>
-                    <p className="newsletter-asset-label lang-te">{asset.label}</p>
-                    <p className="newsletter-asset-summary lang-te">{asset.summary}</p>
+                    <p className="lang-te">{asset.label}</p>
+                    <em className="lang-te">{asset.summary}</em>
+                    <span>{asset.takenOn}</span>
                   </div>
                 </button>
               </li>
@@ -395,6 +365,21 @@ export function NewsletterAssetForm({ initialAssets }: { initialAssets: Newslett
           </ul>
         )}
       </section>
+
+      {selected ? (
+        <AssetDetailModal
+          key={selected.id}
+          asset={selected}
+          pending={pending}
+          message={detailMessage}
+          onClose={() => {
+            setSelectedId(null);
+            setDetailMessage(null);
+          }}
+          onSave={saveDetails}
+          onRemove={removeSelected}
+        />
+      ) : null}
     </div>
   );
 }

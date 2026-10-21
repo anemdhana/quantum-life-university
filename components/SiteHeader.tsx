@@ -1,3 +1,4 @@
+import Image from "next/image";
 import Link from "next/link";
 import { getSessionProfile } from "@/lib/auth/profile";
 
@@ -9,7 +10,15 @@ export async function SiteHeader() {
   return (
     <header className="site-header">
       <Link className="brand" href="/">
-        QUANTUM LIFE UNIVERSITY
+        <Image
+          src="/brand/qlu-logo.png"
+          alt="Quantum Life University"
+          width={40}
+          height={40}
+          className="brand-mark"
+          priority
+        />
+        <span className="brand-text">QUANTUM LIFE UNIVERSITY</span>
       </Link>
       <nav>
         <Link href="/">Library</Link>

@@ -244,3 +244,34 @@ export async function updateNewsletterAsset(formData: FormData) {
   revalidatePath("/admin");
   return { ok: true as const, asset };
 }
+
+export async function deleteNewsletterAsset(input: { id: string }) {
+  const admin = await requireAdmin();
+  if (!admin.supabase || !admin.userId) {
+    return { ok: false as const, error: admin.error ?? "Sign in as an admin." };
+  }
+
+  const id = input.id.trim();
+  if (!id) return { ok: false as const, error: "Missing asset id." };
+
+  // Prefer returning=representation so a blocked RLS delete is not a silent no-op.
+  const { data: deleted, error } = await admin.supabase
+    .from("newsletter_assets")
+    .delete()
+    .eq("id", id)
+    .select("id, image_url")
+    .maybeSingle();
+
+  if (error) return { ok: false as const, error: error.message };
+  if (!deleted) {
+    return {
+      ok: false as const,
+      error: "Could not remove that photo. Sign in as an admin and try again.",
+    };
+  }
+
+  await removePublicImage(deleted.image_url);
+  revalidatePath("/admin/newsletter");
+  revalidatePath("/admin");
+  return { ok: true as const, id: deleted.id };
+}

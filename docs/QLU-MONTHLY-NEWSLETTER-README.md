@@ -1,6 +1,6 @@
 # QLU Monthly Newsletter
 
-Telugu-first soft PDF, published on the **1st of each month**. Editors bank photos and captions in a **global admin library**, then near month-end **download Markdown + images** and hand that pack to any AI (ChatGPT, Grok, …) together with the static look-and-feel brief to produce the PDF.
+Telugu-first soft PDF, published on the **1st of each month**. Editors bank photos with **header title/subtitle (Label)** and **topic content (Summary)** in a **global admin library**, then near month-end **download Markdown + images** and hand that pack to any AI (ChatGPT, Grok, …) with the look-and-feel brief — choosing **Tiles** (compact grid) or **Article** layout — to produce the PDF.
 
 No server-side PDF render in v1 — the export pack is the source of truth for drafting.
 
@@ -23,10 +23,11 @@ No server-side PDF render in v1 — the export pack is the source of truth for d
 All month          Admin → Newsletter
                    upload photo + section title + label + summary + date taken
                         ↓
-Near month-end     Download resource pack (.zip)
+Near month-end     Admin → Newsletter → Prepare PDF
+                   Download zip + Copy prompt → ChatGPT
                         ↓
-                   ChatGPT / Grok / designer
-                   (00-LOOK-AND-FEEL.md + sections/*.md + images/)
+                   First chat: full prompt + whole zip
+                   Later months: short prompt + sections/images only
                         ↓
 1st of next month  QLU-Newsletter-YYYY-MM-te.pdf → email / WhatsApp
 ```
@@ -34,8 +35,9 @@ Near month-end     Download resource pack (.zip)
 ### Admin (v1)
 
 - Route: `/admin/newsletter`
-- Assets are **global** (not tied to one issue). Filter by **section title** and **date taken** when assembling a month.
-- **Title** is a closed list: **Global Assets** (default, usable in any section) plus the seven body sections (dropdown, not free text).
+- Assets are **global** (not tied to one issue). Section left nav + searchable photo rows.
+- **Title** is a closed list: **Global Assets** (default, usable in any section) plus the seven body sections.
+- **Prepare PDF**: download resource zip; copy **First PDF** or **Next month** ChatGPT prompt.
 
 ### Export pack (for AI)
 
@@ -44,10 +46,10 @@ Near month-end     Download resource pack (.zip)
 | `00-LOOK-AND-FEEL.md` | Copy of the static design brief — do not invent style |
 | `01-BRIEF.md` | Month window, issue id, editor notes |
 | `MANIFEST.md` | Inventory of included assets |
-| `sections/*.md` | Facts only — one file per section with assets |
+| `sections/*.md` | Facts only — one file per section (incl. Global Assets) |
 | `images/*` | Referenced photos |
 
-Prompt pattern: *Follow `00-LOOK-AND-FEEL.md`. Draft the newsletter using only `sections/` and `images/`. Do not invent teachings.*
+Prompts: `lib/newsletter/prompts.ts` — first chat attaches the full pack; follow-ups skip re-attaching look-and-feel.
 
 ---
 
@@ -86,9 +88,9 @@ Full rules: **[Look & feel](./QLU-NEWSLETTER-LOOK-AND-FEEL.md)**.
 
 | Done / specified | Later |
 |------------------|--------|
-| Global asset create + list (admin) | Edit / delete assets |
-| Docs for export + look-and-feel | Implement zip download UI |
-| Section-title allow-list in specs | Email / WhatsApp automation |
-| | Server-side PDF; public archive |
+| Global asset create / update / delete (admin gallery) | Email / WhatsApp automation |
+| Export zip + first / follow-up ChatGPT prompts | Server-side PDF render |
+| Section-title allow-list + Global Assets | Public archive |
+| Docs for export + look-and-feel | |
 
 App entry: `quantum-life-university` (Self Knowledge Reading). See repo root [README](../README.md) for local run.

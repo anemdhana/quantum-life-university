@@ -88,6 +88,7 @@ type NewsletterAssetRow = {
   title: string;
   label: string;
   summary: string;
+  instruction: string;
   image_url: string;
   taken_on: string;
   created_by: string | null;
@@ -203,6 +204,7 @@ export type Database = {
           title: string;
           label: string;
           summary?: string;
+          instruction?: string;
           image_url: string;
           taken_on?: string;
           created_by?: string | null;

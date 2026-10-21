@@ -56,6 +56,7 @@ export type NewsletterAssetListItem = {
   title: NewsletterSectionTitle;
   label: string;
   summary: string;
+  instruction: string;
   imageUrl: string;
   takenOn: string;
   createdAt: string;
@@ -66,6 +67,7 @@ function mapAsset(row: {
   title: string;
   label: string;
   summary: string;
+  instruction?: string | null;
   image_url: string;
   taken_on: string;
   created_at: string;
@@ -76,11 +78,14 @@ function mapAsset(row: {
     title: row.title,
     label: row.label,
     summary: row.summary,
+    instruction: row.instruction ?? "",
     imageUrl: row.image_url,
     takenOn: row.taken_on,
     createdAt: row.created_at,
   };
 }
+
+const ASSET_SELECT = "id, title, label, summary, instruction, image_url, taken_on, created_at";
 
 export async function listNewsletterAssets(options?: {
   title?: NewsletterSectionTitle;
@@ -94,7 +99,7 @@ export async function listNewsletterAssets(options?: {
   const limit = Math.min(Math.max(options?.limit ?? 100, 1), 500);
   let query = admin.supabase
     .from("newsletter_assets")
-    .select("id, title, label, summary, image_url, taken_on, created_at")
+    .select(ASSET_SELECT)
     .order("created_at", { ascending: false })
     .limit(limit);
 
@@ -117,14 +122,16 @@ function parseAssetFields(formData: FormData) {
   const titleRaw = String(formData.get("title") ?? "").trim();
   const label = String(formData.get("label") ?? "").trim();
   const summary = String(formData.get("summary") ?? "").trim();
+  const instruction = String(formData.get("instruction") ?? "").trim();
   const takenOnRaw = String(formData.get("takenOn") ?? "").trim() || todayLocalIsoDate();
   const image = formData.get("image");
   const file = image instanceof File && image.size > 0 ? image : null;
 
   if (!titleRaw) return { ok: false as const, error: "Choose a newsletter section title." };
   if (!isNewsletterSectionTitle(titleRaw)) return { ok: false as const, error: "Invalid section title." };
-  if (label.length < 2) return { ok: false as const, error: "Enter a long label / caption." };
-  if (summary.length < 2) return { ok: false as const, error: "Enter a short summary." };
+  if (label.length < 2) return { ok: false as const, error: "Enter a long label (header title + subtitle)." };
+  if (summary.length < 2) return { ok: false as const, error: "Enter topic content in the summary." };
+  if (instruction.length > 2000) return { ok: false as const, error: "Keep the instruction under 2000 characters." };
   if (!/^\d{4}-\d{2}-\d{2}$/.test(takenOnRaw)) {
     return { ok: false as const, error: "Date taken must be YYYY-MM-DD." };
   }
@@ -134,6 +141,7 @@ function parseAssetFields(formData: FormData) {
     title: titleRaw,
     label,
     summary,
+    instruction,
     takenOn: takenOnRaw,
     file,
   };
@@ -162,11 +170,12 @@ export async function createNewsletterAsset(formData: FormData) {
       title: parsed.title,
       label: parsed.label,
       summary: parsed.summary,
+      instruction: parsed.instruction,
       image_url: imageUrl,
       taken_on: parsed.takenOn,
       created_by: admin.userId,
     })
-    .select("id, title, label, summary, image_url, taken_on, created_at")
+    .select(ASSET_SELECT)
     .single();
 
   if (error || !data) {
@@ -220,12 +229,13 @@ export async function updateNewsletterAsset(formData: FormData) {
       title: parsed.title,
       label: parsed.label,
       summary: parsed.summary,
+      instruction: parsed.instruction,
       image_url: imageUrl,
       taken_on: parsed.takenOn,
       updated_at: new Date().toISOString(),
     })
     .eq("id", id)
-    .select("id, title, label, summary, image_url, taken_on, created_at")
+    .select(ASSET_SELECT)
     .single();
 
   if (error || !data) {

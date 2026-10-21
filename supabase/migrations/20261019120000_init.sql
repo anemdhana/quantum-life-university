@@ -37,7 +37,7 @@ create table if not exists public.days (
   day_number  int not null check (day_number between 1 and 9),
   title       text not null,
   subtitle    text,
-  language    text not null default 'te' check (language in ('te', 'en')),
+  language    text not null default 'te' check (language in ('te', 'en', 'kn', 'hi')),
   published   boolean default true,
   created_at  timestamptz default now(),
   -- One row per language so Day 8 Telugu and English can both exist.
@@ -65,7 +65,7 @@ create table if not exists public.sections (
 create table if not exists public.user_progress (
   user_id       uuid primary key references public.profiles(id) on delete cascade,
   day_number    int not null,
-  language      text not null default 'te' check (language in ('te', 'en')),
+  language      text not null default 'te' check (language in ('te', 'en', 'kn', 'hi')),
   section_id    uuid references public.sections(id),
   section_order int,
   spread_index  int default 0,

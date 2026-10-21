@@ -164,7 +164,7 @@ Editors need a place inside **Self Knowledge Reading admin** to bank **photo sna
 
 ### 7.2 User story
 
-> As a QLU editor, I can open **Admin → Newsletter**, choose a **section title** from the fixed list, upload a **photo snapshot**, write a **long label** (caption) and a **summary**, set **date taken** (default today), and save — so the asset sits in the **global** library for any newsletter that needs that section.
+> As a QLU editor, I can open **Admin → Newsletter**, choose a **section title** from the fixed list, upload a **photo snapshot**, write a **long label** (header title + subtitle) and a **summary** (topic content), set **date taken** (default today), and save — so the asset sits in the **global** library for any newsletter that needs that section.
 
 ### 7.3 Fields
 
@@ -172,8 +172,9 @@ Editors need a place inside **Self Knowledge Reading admin** to bank **photo sna
 |-------|----------|--------|
 | **Title** | Yes | **Must be exactly one** of the allowed section titles below (UI: dropdown / select — not free text). Defaults to **Global Assets**. |
 | **Image** (photo snapshot) | Yes (on create) | JPEG / PNG / WebP; max 5 MB. Stored under the app’s public newsletter assets path. |
-| **Label** | Yes | Long caption / label text for the PDF (Telugu-friendly; multi-line). |
-| **Summary** | Yes | Short paragraph explaining context (who, where, why it matters under that section). |
+| **Label** | Yes | **Header title + subtitle** for the PDF (Telugu-friendly). First line = title; further lines = subtitle (or one line `Title — Subtitle`). |
+| **Summary** | Yes | **Topic content** about this photo/item — the body text the PDF should carry (who, what, why it matters). |
+| **Instruction** | No | Optional notes for ChatGPT on **how this item should look** (layout, emphasis, pairing). Not factual content. |
 | **Date taken** | Yes | Calendar date; **defaults to today** in the form; editable. |
 
 ### 7.4 Allowed values for **Title** (closed list)
@@ -224,9 +225,10 @@ Download **everything added so far** in the global library (optionally filtered 
 |-------------|---------|
 | `00-LOOK-AND-FEEL.md` | Copy of [QLU-NEWSLETTER-LOOK-AND-FEEL.md](./QLU-NEWSLETTER-LOOK-AND-FEEL.md) (canonical design brief) |
 | `01-BRIEF.md` | Generated: coverage month, language (te), issue target date, reminder of seven headings |
-| `sections/*.md` | One Markdown file per section title that has ≥1 asset (or empty stub with “no items”) |
+| `02-LAYOUT-DIRECTIVES.md` | All non-empty **Instruction** fields — **mandatory** layout rules for ChatGPT |
+| `sections/*.md` | One Markdown file per section title that has ≥1 asset (or empty stub with “no items”); Instruction as **MUST FOLLOW** blockquote |
 | `images/*` | Image binaries referenced by relative paths from the section markdown |
-| `MANIFEST.md` | Counts, date filter used, export timestamp |
+| `MANIFEST.md` | Counts (incl. instruction count), date filter used, export timestamp |
 
 ### 8.4 Section Markdown shape (per asset)
 
@@ -238,24 +240,38 @@ Each `sections/….md` groups assets under that section title:
 ## Item: <short id or taken_on + order>
 
 - **Date taken:** YYYY-MM-DD
-- **Label:** <long caption>
-- **Summary:** <context paragraph>
+- **Label (raw):** …
+- **Header title:** <from Label>
+- **Subtitle:** <from Label>
+- **Topic content (Summary):** <body about this topic>
+- **Instruction (presentation):** <optional how-it-should-look notes>
 - **Image:** ../images/<filename>
 
 …
 ```
 
-AI must treat **Label** as caption and **Summary** as editorial context; do not invent facts beyond these fields (plus BRIEF).
+AI must treat **Label** as header title + subtitle, **Summary** as topic content, and **Instruction** as presentation-only guidance; do not invent facts beyond Label/Summary (plus BRIEF). Prefer Tiles only when there is enough content; otherwise use Article flow.
 
 ### 8.5 Admin behaviour
 
-- Button: **Download resources (.md + images)** on Admin → Newsletter.
-- Options: date range (default = current coverage month), optional “all global assets”.
-- Output: single `.zip` download for the signed-in admin.
+- Panel: **Prepare PDF (ChatGPT)** on Admin → Newsletter (above the asset gallery).
+- Button: **Download resources (.md + images)** — zip for the signed-in admin.
+- Options: date range (default = **previous calendar month** coverage), issue month (`YYYY-MM`), optional “all global assets”, **PDF layout** (**Tiles** compact grid or **Article** reading flow).
+- **Copy prompt** with two modes:
+  - **First PDF (full prompt)** — new ChatGPT chat; attach the whole zip (look-and-feel + sections + images).
+  - **Next month (short)** — same ChatGPT project; attach only this month’s `sections/` + `images/` (style already known).
 
-### 8.6 AI prep prompt (suggested)
+### 8.6 AI prep prompts
 
-> Use `00-LOOK-AND-FEEL.md` for design and structure. Use `01-BRIEF.md` and `sections/*.md` + `images/` as the only factual sources. Draft the Telugu monthly newsletter PDF content with the seven fixed headings in order. Place images with captions from Label fields.
+**First issue / new chat** (attach zip or unpack and upload folders):
+
+> Follow `00-LOOK-AND-FEEL.md`. Use `01-BRIEF.md` and `sections/*.md` + `images/` as the only factual sources. Draft the Telugu monthly newsletter PDF with the seven fixed body headings in order. Label = header title + subtitle; Summary = topic content; Instruction = presentation. Prefer Tiles when there is enough content; otherwise Article. Do not invent teachings. File name `QLU-Newsletter-YYYY-MM-te.pdf`.
+
+**Later months** (short; look-and-feel already in the chat):
+
+> New QLU issue `YYYY-MM`. Same look-and-feel and heading order. Attach only this month’s `sections/*.md` + `images/*`. Layout preference: Tiles (relax if thin) or Article. Label = title/subtitle, Summary = topic body, Instruction = look notes; no invented facts. Empty sections → ఈ నెలలో ప్రత్యేక నివేదిక లేదు.
+
+App source: `lib/newsletter/prompts.ts` (`firstNewsletterPdfPrompt` / `followUpNewsletterPdfPrompt`).
 
 ---
 
@@ -266,10 +282,10 @@ Full design tokens, fonts, logos, sizing: **[QLU-NEWSLETTER-LOOK-AND-FEEL.md](./
 | Item | Guidance (summary) |
 |------|---------------------|
 | **Page size** | A4 |
-| **Layout** | Single column Telugu body; calm masthead |
-| **Typography** | Telugu sans ≥ 11 pt; headings `#6b4a25`; brand gold tracked caps |
+| **Layout** | **Article:** single column. **Tiles:** soft 2-column compact grid within sections. Calm masthead |
+| **Typography** | Telugu sans ≥ 11 pt (Article) / ≥ 9–10 pt (Tiles); headings `#6b4a25`; brand gold tracked caps |
 | **Colours** | Paper `#fffdf8`, ink `#352d26`, gold `#a17b43`, side `#f6f1e8` |
-| **Imagery** | From export pack; captions = Label |
+| **Imagery** | From export pack; Label → title/subtitle; Summary → topic body |
 | **Versioning** | Footer: QLU + issue id + page X of Y |
 
 ---

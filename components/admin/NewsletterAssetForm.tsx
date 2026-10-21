@@ -44,6 +44,7 @@ function AssetDetailModal({
     title: NewsletterSectionTitle;
     label: string;
     summary: string;
+    instruction: string;
     takenOn: string;
     imageFile: File | null;
   }) => Promise<void>;
@@ -52,6 +53,7 @@ function AssetDetailModal({
   const [title, setTitle] = useState(asset.title);
   const [label, setLabel] = useState(asset.label);
   const [summary, setSummary] = useState(asset.summary);
+  const [instruction, setInstruction] = useState(asset.instruction);
   const [takenOn, setTakenOn] = useState(asset.takenOn);
   const [imageFile, setImageFile] = useState<File | null>(null);
   const [previewUrl, setPreviewUrl] = useState(asset.imageUrl);
@@ -94,19 +96,33 @@ function AssetDetailModal({
             rows={3}
             value={label}
             onChange={(event) => setLabel(event.target.value)}
-            placeholder="Caption for the PDF"
+            placeholder={"Header title on first line\nSubtitle on next line (or Title — Subtitle)"}
           />
+          <em className="muted newsletter-field-hint">Printed as header title + subtitle in the PDF.</em>
         </label>
 
         <label className="newsletter-field">
           <span>Summary</span>
           <textarea
             className="uk-textarea lang-te"
-            rows={2}
+            rows={3}
             value={summary}
             onChange={(event) => setSummary(event.target.value)}
-            placeholder="Who, where, why it matters"
+            placeholder="Topic content: what happened, why it matters under this section"
           />
+          <em className="muted newsletter-field-hint">Used as the body text about this photo/topic.</em>
+        </label>
+
+        <label className="newsletter-field">
+          <span>Instruction</span>
+          <textarea
+            className="uk-textarea"
+            rows={3}
+            value={instruction}
+            onChange={(event) => setInstruction(event.target.value)}
+            placeholder="Optional notes for ChatGPT: e.g. full-width hero, short pull-quote, pair with next photo, keep one short paragraph…"
+          />
+          <em className="muted newsletter-field-hint">How this item should look in the PDF — not extra facts.</em>
         </label>
 
         <div className="newsletter-detail-row">
@@ -149,7 +165,7 @@ function AssetDetailModal({
             type="button"
             className="uk-button uk-button-primary uk-button-small"
             disabled={pending}
-            onClick={() => void onSave({ title, label, summary, takenOn, imageFile })}
+            onClick={() => void onSave({ title, label, summary, instruction, takenOn, imageFile })}
           >
             {pending ? "Saving…" : "Save"}
           </button>
@@ -181,7 +197,9 @@ export function NewsletterAssetForm({ initialAssets }: { initialAssets: Newslett
     const needle = query.trim().toLowerCase();
     if (!needle) return inSection;
     return inSection.filter((asset) => {
-      const haystack = [asset.title, asset.label, asset.summary, asset.takenOn].join("\n").toLowerCase();
+      const haystack = [asset.title, asset.label, asset.summary, asset.instruction, asset.takenOn]
+        .join("\n")
+        .toLowerCase();
       return haystack.includes(needle);
     });
   }, [assets, section, query]);
@@ -206,6 +224,7 @@ export function NewsletterAssetForm({ initialAssets }: { initialAssets: Newslett
       data.set("title", section);
       data.set("label", labelFromFilename(file.name));
       data.set("summary", "Add summary…");
+      data.set("instruction", "");
       data.set("takenOn", takenOn);
       data.set("image", file);
       const result = await createNewsletterAsset(data);
@@ -230,6 +249,7 @@ export function NewsletterAssetForm({ initialAssets }: { initialAssets: Newslett
     title: NewsletterSectionTitle;
     label: string;
     summary: string;
+    instruction: string;
     takenOn: string;
     imageFile: File | null;
   }) {
@@ -241,6 +261,7 @@ export function NewsletterAssetForm({ initialAssets }: { initialAssets: Newslett
     data.set("title", input.title);
     data.set("label", input.label);
     data.set("summary", input.summary);
+    data.set("instruction", input.instruction);
     data.set("takenOn", input.takenOn);
     if (input.imageFile) data.set("image", input.imageFile);
     const result = await updateNewsletterAsset(data);
@@ -357,6 +378,9 @@ export function NewsletterAssetForm({ initialAssets }: { initialAssets: Newslett
                     <strong>{asset.title}</strong>
                     <p className="lang-te">{asset.label}</p>
                     <em className="lang-te">{asset.summary}</em>
+                    {asset.instruction.trim() ? (
+                      <span className="newsletter-instruction-preview">Instruction: {asset.instruction.trim()}</span>
+                    ) : null}
                     <span>{asset.takenOn}</span>
                   </div>
                 </button>

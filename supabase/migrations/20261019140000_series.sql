@@ -56,7 +56,7 @@ alter table public.days
   add constraint days_day_number_check check (day_number between 1 and 31);
 
 alter table public.days
-  add constraint days_language_check check (language in ('te', 'en'));
+  add constraint days_language_check check (language in ('te', 'en', 'kn', 'hi'));
 
 alter table public.days
   add constraint days_series_day_language_key unique (series_id, day_number, language);

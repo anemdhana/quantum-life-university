@@ -5,6 +5,7 @@ create table if not exists public.newsletter_assets (
   title       text not null,
   label       text not null,
   summary     text not null default '',
+  instruction text not null default '',
   image_url   text not null,
   taken_on    date not null default (current_date),
   created_by  uuid references public.profiles(id) on delete set null,

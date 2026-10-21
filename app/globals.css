@@ -880,6 +880,131 @@ a {
   white-space: nowrap;
 }
 
+.newsletter-page {
+  display: grid;
+  gap: 14px;
+}
+
+.newsletter-prepare-head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.newsletter-prepare-head h2 {
+  margin: 0;
+}
+
+.newsletter-prepare-fields {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 10px;
+  margin-top: 12px;
+}
+
+.newsletter-all-check {
+  grid-column: 1 / -1;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin: 0;
+  font-size: 13px;
+}
+
+.newsletter-prepare-actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 10px;
+  margin-top: 12px;
+}
+
+.newsletter-layout-tabs {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+  margin-top: 12px;
+}
+
+.newsletter-layout-label {
+  font: 600 12px/1.2 system-ui, sans-serif;
+  color: #6f6252;
+  margin-right: 4px;
+}
+
+.newsletter-layout-tabs button[role="radio"] {
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: #fff;
+  padding: 6px 10px;
+  font: 600 12px/1.2 system-ui, sans-serif;
+  color: #6f6252;
+  cursor: pointer;
+}
+
+.newsletter-layout-tabs button[role="radio"].active {
+  border-color: color-mix(in srgb, var(--gold) 55%, var(--line));
+  background: color-mix(in srgb, var(--side) 70%, #fff);
+  color: var(--ink);
+}
+
+.newsletter-layout-hint {
+  flex: 1 1 12rem;
+  font-size: 12px;
+}
+
+.newsletter-field-hint {
+  display: block;
+  margin-top: 4px;
+  font-size: 12px;
+  font-style: normal;
+}
+
+.newsletter-instruction-preview {
+  display: block;
+  margin-top: 4px;
+  font-size: 12px;
+  color: #6b4a25;
+  white-space: pre-wrap;
+}
+
+.newsletter-prompt-tabs {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+  margin-top: 14px;
+}
+
+.newsletter-prompt-tabs button[role="tab"] {
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: #fff;
+  padding: 6px 10px;
+  font: 600 12px/1.2 system-ui, sans-serif;
+  color: #6f6252;
+  cursor: pointer;
+}
+
+.newsletter-prompt-tabs button[role="tab"].active {
+  border-color: color-mix(in srgb, var(--gold) 55%, var(--line));
+  background: color-mix(in srgb, var(--side) 70%, #fff);
+  color: var(--ink);
+}
+
+.newsletter-prompt-hint {
+  margin: 8px 0 0;
+  font-size: 13px;
+}
+
+.newsletter-prompt-box {
+  margin-top: 8px;
+  font: 12px/1.45 ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  white-space: pre-wrap;
+}
+
 .newsletter-shell {
   display: grid;
   grid-template-columns: minmax(11rem, 15rem) minmax(0, 1fr);
@@ -1153,6 +1278,10 @@ a {
 }
 
 @media (max-width: 860px) {
+  .newsletter-prepare-fields {
+    grid-template-columns: 1fr;
+  }
+
   .newsletter-shell {
     grid-template-columns: 1fr;
   }

@@ -153,12 +153,17 @@ services:
     environment:
       PGPASSWORD: ${POSTGRES_PASSWORD}
     volumes:
-      - ./supabase/migrations/20261019120000_init.sql:/sql/init.sql:ro
-      - ./supabase/seed.sql:/sql/seed.sql:ro
-      - ./supabase/seed-users.sql:/sql/seed-users.sql:ro
-      - ./supabase/migrations/20261019140000_series.sql:/sql/series.sql:ro
-      - ./supabase/migrations/20261020130000_youtube.sql:/sql/youtube.sql:ro
-      - ./supabase/migrations/20261020140000_section_start.sql:/sql/section_start.sql:ro
+      - ./supabase/migrations/20261019120000_init.sql:/sql/01_init.sql:ro
+      - ./supabase/migrations/20261019140000_series.sql:/sql/02_series.sql:ro
+      - ./supabase/migrations/20261020130000_youtube.sql:/sql/03_youtube.sql:ro
+      - ./supabase/migrations/20261020140000_section_start.sql:/sql/04_section_start.sql:ro
+      - ./supabase/migrations/20261020190000_newsletter_assets.sql:/sql/05_newsletter_assets.sql:ro
+      - ./supabase/migrations/20261021080000_languages_kn_hi.sql:/sql/06_languages_kn_hi.sql:ro
+      - ./supabase/migrations/20261021090000_newsletter_title_check.sql:/sql/07_newsletter_title_check.sql:ro
+      - ./supabase/migrations/20261021093000_newsletter_global_assets_title.sql:/sql/08_newsletter_global_assets_title.sql:ro
+      - ./supabase/migrations/20261021100000_newsletter_instruction.sql:/sql/09_newsletter_instruction.sql:ro
+      - ./supabase/seed.sql:/sql/90_seed.sql:ro
+      - ./supabase/seed-users.sql:/sql/91_seed-users.sql:ro
     entrypoint: ["sh", "-c"]
     command:
       - |
@@ -167,12 +172,10 @@ services:
         # Wait until GoTrue has migrated a modern auth schema.
         until psql -h db -U postgres -d postgres -tAc "select 1 from information_schema.columns where table_schema='auth' and table_name='refresh_tokens' and column_name='parent'" | grep -q 1; do sleep 2; done
         until psql -h db -U postgres -d postgres -c "select 1 from auth.users limit 0"; do sleep 2; done
-        psql -h db -U postgres -d postgres -v ON_ERROR_STOP=1 -f /sql/init.sql
-        psql -h db -U postgres -d postgres -v ON_ERROR_STOP=1 -f /sql/series.sql
-        psql -h db -U postgres -d postgres -v ON_ERROR_STOP=1 -f /sql/youtube.sql
-        psql -h db -U postgres -d postgres -v ON_ERROR_STOP=1 -f /sql/section_start.sql
-        psql -h db -U postgres -d postgres -v ON_ERROR_STOP=1 -f /sql/seed.sql
-        psql -h db -U postgres -d postgres -v ON_ERROR_STOP=1 -f /sql/seed-users.sql
+        for f in /sql/0*.sql /sql/9*.sql; do
+          echo "Applying $$f"
+          psql -h db -U postgres -d postgres -v ON_ERROR_STOP=1 -f "$$f"
+        done
     restart: "no"
 
 volumes:

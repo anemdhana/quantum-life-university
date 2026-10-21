@@ -16,7 +16,7 @@
 | Admin page `/admin/newsletter` | Public newsletter gallery |
 | Create asset: section **title**, photo, long **label**, **summary**, **taken_on** | Server-side final PDF render |
 | List assets newest-first (global) | Email / WhatsApp distribution automation |
-| **Export zip**: look-and-feel `.md` + section `.md` + `images/` | Supabase Storage bucket (optional later) |
+| **Export zip** + first/follow-up ChatGPT prompts in admin UI | Supabase Storage bucket (optional later) |
 | Local file storage under `public/newsletter/` | |
 
 **Design rule:** Assets are **global inventory**. Monthly newsletters **select** from this pool; they do not create private copies. `taken_on` and section `title` are filters for editors, not foreign keys to an issue row.
@@ -31,8 +31,9 @@
 |--------|------|--------|
 | `id` | `uuid` PK | `gen_random_uuid()` |
 | `title` | `text` not null | **Closed set** — newsletter section title (see §2.2). Not free-form. |
-| `label` | `text` not null | Long caption / label for PDF |
-| `summary` | `text` not null | Context paragraph; default `''` |
+| `label` | `text` not null | Header title + subtitle for PDF (multi-line) |
+| `summary` | `text` not null default `''` | Topic body content for PDF |
+| `instruction` | `text` not null default `''` | Optional ChatGPT presentation notes (not facts) |
 | `image_url` | `text` not null | Public URL path, e.g. `/newsletter/….jpg` |
 | `taken_on` | `date` not null | Date photo was taken; default `current_date` |
 | `created_by` | `uuid` null | FK → `profiles(id)` |
@@ -197,23 +198,25 @@ QLU-newsletter-resources-{yyyy-MM}/   # or -all / -from-to
 - Include every allow-listed section; if no assets in range, file still exists with a stub note.
 - Image links are **relative**: `../images/…`
 - UTF-8 Markdown; Telugu in label/summary preserved.
+- Each item exports **Header title** / **Subtitle** (parsed from Label), **Topic content (Summary)**, and optional **Instruction**.
 
 #### `01-BRIEF.md` (generated)
 
 - Coverage window (`takenOnFrom`–`takenOnTo`)
 - Target issue month / send date (1st)
 - Language: Telugu
-- Pointer: follow `00-LOOK-AND-FEEL.md` for headings, colours, fonts, sizes
+- Pointer: follow `00-LOOK-AND-FEEL.md` for headings, colours, fonts, sizes, **Article vs Tiles** layout
 - Suggested AI instruction paragraph (from requirements §8.6)
 
 #### Implementation sketch
 
 | Piece | Notes |
 |-------|--------|
-| Action | `exportNewsletterResources({ takenOnFrom?, takenOnTo? })` → `Blob` / temp zip path |
-| Library | e.g. `archiver` or `jszip` on server |
-| UI | “Download resources (.md + images)” on `/admin/newsletter` |
-| Auth | Admin only |
+| Route | `GET /api/admin/newsletter/export?takenOnFrom=&takenOnTo=&issueMonth=&all=1` |
+| Builder | `lib/newsletter/exportPack.ts` + `jszip` |
+| Prompts | `lib/newsletter/prompts.ts` — first vs follow-up; `layout: article \| tiles` |
+| UI | `NewsletterPreparePanel` on `/admin/newsletter` (layout radio + prompt tabs) |
+| Auth | Admin session (`getSessionProfile`) |
 
 ---
 

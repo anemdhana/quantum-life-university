@@ -43,8 +43,9 @@ type NewsletterSectionTitle =
 type NewsletterAsset = {
   id: string;           // uuid
   title: NewsletterSectionTitle;
-  label: string;        // long caption
-  summary: string;
+  label: string;        // header title + subtitle
+  summary: string;      // topic content
+  instruction: string;  // optional presentation notes for ChatGPT
   imageUrl: string;     // e.g. "/newsletter/….jpg"
   takenOn: string;      // "YYYY-MM-DD"
   createdAt: string;    // ISO timestamptz
@@ -110,6 +111,7 @@ Filtering does **not** make assets issue-scoped; it only narrows the global pool
 | `image` | `File` | Yes | `image/jpeg` \| `image/png` \| `image/webp`; ≤ 5 MB |
 | `label` | string | Yes | trim; min length 2 |
 | `summary` | string | Yes | trim; min length 2 |
+| `instruction` | string | No | trim; max 2000; presentation notes for ChatGPT |
 | `takenOn` | string | Yes* | `YYYY-MM-DD`; if missing/empty, server may default to **today** (local) |
 
 \*UI always sends a date; default **today** is a client (and optionally server) default.
@@ -124,6 +126,7 @@ Filtering does **not** make assets issue-scoped; it only narrows the global pool
     "title": "Goloka, Sahasrara and QLU Updates",
     "label": "…",
     "summary": "…",
+    "instruction": "",
     "imageUrl": "/newsletter/goloka-….jpg",
     "takenOn": "2026-10-20",
     "createdAt": "2026-10-20T15:00:00.000Z"
@@ -138,8 +141,8 @@ Filtering does **not** make assets issue-scoped; it only narrows the global pool
 | Sign in as an admin. | No session |
 | Only an admin can manage newsletter assets. | Wrong role |
 | Choose a newsletter section title. / Invalid section title. | Missing or not in allow-list |
-| Enter a long label / caption. | Label too short |
-| Enter a short summary. | Summary too short |
+| Enter a long label (header title + subtitle). | Label too short |
+| Enter topic content in the summary. | Summary too short |
 | Upload an image. | No file |
 | Choose a JPEG, PNG, or WebP image. | Bad MIME |
 | Use an image smaller than 5 MB. | Too large |
@@ -162,9 +165,9 @@ No issue row is created or updated (global only).
 
 | | |
 |--|--|
-| **Signature (proposed)** | `exportNewsletterResources(input?: { takenOnFrom?: string; takenOnTo?: string }): Promise<{ ok: true; filename: string; bytes: Uint8Array } \| ActionError>` |
-| **HTTP alternative** | `GET /api/admin/newsletter/export?takenOnFrom=&takenOnTo=` → `application/zip` |
-| **Auth** | Admin required |
+| **HTTP (implemented)** | `GET /api/admin/newsletter/export?takenOnFrom=&takenOnTo=&issueMonth=YYYY-MM&all=1` → `application/zip` |
+| **Builder** | `buildNewsletterExportZip` in `lib/newsletter/exportPack.ts` |
+| **Auth** | Admin required (`getSessionProfile`) |
 
 #### Query / input
 
@@ -192,8 +195,11 @@ No issue row is created or updated (global only).
 ## Item: {asset.id}
 
 - **Date taken:** {takenOn}
-- **Label:** {label}
-- **Summary:** {summary}
+- **Label (raw):** {label}
+- **Header title:** {from label}
+- **Subtitle:** {from label}
+- **Topic content (Summary):** {summary}
+- **Instruction (presentation):** {instruction or none}
 - **Image:** ../images/{filename}
 ```
 

@@ -1,8 +1,10 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
+import { parseLanguage } from "@/lib/language";
 import { createClient } from "@/lib/supabase/server";
 import { slugify } from "@/lib/series";
+import type { Language } from "@/types/content";
 
 async function requireAdmin() {
   const supabase = await createClient();
@@ -49,29 +51,31 @@ export async function renameSeries(input: { slug: string; name: string }) {
   return { ok: true as const, name };
 }
 
-export async function deleteDay(input: { seriesSlug: string; dayNumber: number }) {
+export async function deleteDay(input: { seriesSlug: string; dayNumber: number; language: Language }) {
   const admin = await requireAdmin();
   if (!admin.supabase) return { ok: false as const, error: admin.error ?? "Sign in as an admin." };
 
+  const language = parseLanguage(input.language);
   const { data: series } = await admin.supabase.from("series").select("id, slug").eq("slug", input.seriesSlug).maybeSingle();
   if (!series) return { ok: false as const, error: "That series is not in the library." };
 
-  const { data: days } = await admin.supabase
+  const { data: day } = await admin.supabase
     .from("days")
     .select("id")
     .eq("series_id", series.id)
-    .eq("day_number", input.dayNumber);
-  if (!days?.length) return { ok: false as const, error: "That day is already gone." };
+    .eq("day_number", input.dayNumber)
+    .eq("language", language)
+    .maybeSingle();
+  if (!day) return { ok: false as const, error: "That language version is already gone." };
 
-  const dayIds = days.map((day) => day.id);
-  const { data: sections } = await admin.supabase.from("sections").select("id").in("day_id", dayIds);
+  const { data: sections } = await admin.supabase.from("sections").select("id").eq("day_id", day.id);
   const cleared = await clearSectionRefs(
     admin.supabase,
     (sections ?? []).map((section) => section.id),
   );
   if (cleared) return { ok: false as const, error: cleared };
 
-  const { error } = await admin.supabase.from("days").delete().in("id", dayIds);
+  const { error } = await admin.supabase.from("days").delete().eq("id", day.id);
   if (error) return { ok: false as const, error: error.message };
 
   revalidateLibrary(series.slug);

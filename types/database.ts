@@ -29,7 +29,7 @@ type DayRow = {
   day_number: number;
   title: string;
   subtitle: string | null;
-  language: "te" | "en";
+  language: "te" | "en" | "kn" | "hi";
   published: boolean;
   cover_url: string | null;
   youtube_id: string | null;
@@ -51,7 +51,7 @@ type SectionRow = {
 type ProgressRow = {
   user_id: string;
   day_number: number;
-  language: "te" | "en";
+  language: "te" | "en" | "kn" | "hi";
   series_slug: string | null;
   section_id: string | null;
   section_order: number | null;
@@ -134,7 +134,7 @@ export type Database = {
           day_number: number;
           title: string;
           subtitle?: string | null;
-          language?: "te" | "en";
+          language?: "te" | "en" | "kn" | "hi";
           published?: boolean;
           cover_url?: string | null;
           youtube_id?: string | null;
@@ -160,7 +160,7 @@ export type Database = {
         {
           user_id: string;
           day_number: number;
-          language?: "te" | "en";
+          language?: "te" | "en" | "kn" | "hi";
           series_slug?: string | null;
           section_id?: string | null;
           section_order?: number | null;

@@ -35,7 +35,7 @@ Near month-end     Download resource pack (.zip)
 
 - Route: `/admin/newsletter`
 - Assets are **global** (not tied to one issue). Filter by **section title** and **date taken** when assembling a month.
-- **Title** is a closed list of the seven body sections (dropdown, not free text).
+- **Title** is a closed list: **Global Assets** (default, usable in any section) plus the seven body sections (dropdown, not free text).
 
 ### Export pack (for AI)
 
@@ -65,7 +65,7 @@ Every issue keeps this map (empty sections get one quiet Telugu placeholder line
 8. Upcoming Programs/Announcements  
 9. Closing (recommended)
 
-Asset **titles** map to items 2–8 only.
+Asset **titles** map to body items 2–8, or **Global Assets** for photos that may appear under any section.
 
 ---
 

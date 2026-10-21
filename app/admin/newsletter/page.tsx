@@ -14,7 +14,9 @@ export default function NewsletterAdminPage() {
     <>
       <header className="admin-page-head">
         <h1>Newsletter assets</h1>
-        <p className="muted">Bank photos and captions for the monthly Telugu PDF.</p>
+        <p className="muted">
+          Global photo library for the monthly Telugu PDF — section title, snapshot, label, summary, date taken.
+        </p>
       </header>
       <Suspense fallback={<p className="muted">Loading assets…</p>}>
         <NewsletterBody />

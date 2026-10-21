@@ -1,8 +1,13 @@
 "use server";
 
-import { mkdir, writeFile } from "node:fs/promises";
+import { mkdir, unlink, writeFile } from "node:fs/promises";
 import path from "node:path";
 import { revalidatePath } from "next/cache";
+import {
+  isNewsletterSectionTitle,
+  newsletterSectionSlug,
+  type NewsletterSectionTitle,
+} from "@/lib/newsletter/sections";
 import { createClient } from "@/lib/supabase/server";
 
 async function requireAdmin() {
@@ -23,34 +28,32 @@ function todayLocalIsoDate() {
   return `${y}-${m}-${d}`;
 }
 
-function safeSlug(value: string) {
-  return (
-    value
-      .normalize("NFKD")
-      .replace(/[^\w\s-]+/g, "")
-      .trim()
-      .toLowerCase()
-      .replace(/[\s_-]+/g, "-")
-      .replace(/^-+|-+$/g, "")
-      .slice(0, 48) || "asset"
-  );
-}
-
-async function saveImage(file: File, title: string, takenOn: string) {
+async function saveImage(file: File, title: NewsletterSectionTitle, takenOn: string) {
   if (!file.type.startsWith("image/")) throw new Error("Choose a JPEG, PNG, or WebP image.");
   if (file.size > 5_000_000) throw new Error("Use an image smaller than 5 MB.");
   const ext = file.type === "image/png" ? "png" : file.type === "image/webp" ? "webp" : "jpg";
   const short = Math.random().toString(36).slice(2, 8);
-  const filename = `${safeSlug(title)}-${takenOn.replace(/-/g, "")}-${short}.${ext}`;
+  const filename = `${newsletterSectionSlug(title)}-${takenOn.replace(/-/g, "")}-${short}.${ext}`;
   const directory = path.join(process.cwd(), "public", "newsletter");
   await mkdir(directory, { recursive: true });
   await writeFile(path.join(directory, filename), Buffer.from(await file.arrayBuffer()));
   return `/newsletter/${filename}`;
 }
 
+async function removePublicImage(imageUrl: string | null | undefined) {
+  if (!imageUrl?.startsWith("/newsletter/")) return;
+  const filename = imageUrl.slice("/newsletter/".length);
+  if (!filename || filename.includes("..") || filename.includes("/") || filename.includes("\\")) return;
+  try {
+    await unlink(path.join(process.cwd(), "public", "newsletter", filename));
+  } catch {
+    // Missing file is fine when replacing or cleaning up.
+  }
+}
+
 export type NewsletterAssetListItem = {
   id: string;
-  title: string;
+  title: NewsletterSectionTitle;
   label: string;
   summary: string;
   imageUrl: string;
@@ -58,18 +61,17 @@ export type NewsletterAssetListItem = {
   createdAt: string;
 };
 
-export async function listNewsletterAssets(): Promise<NewsletterAssetListItem[]> {
-  const admin = await requireAdmin();
-  if (!admin.supabase || !admin.userId) return [];
-
-  const { data, error } = await admin.supabase
-    .from("newsletter_assets")
-    .select("id, title, label, summary, image_url, taken_on, created_at")
-    .order("created_at", { ascending: false })
-    .limit(100);
-
-  if (error || !data) return [];
-  return data.map((row) => ({
+function mapAsset(row: {
+  id: string;
+  title: string;
+  label: string;
+  summary: string;
+  image_url: string;
+  taken_on: string;
+  created_at: string;
+}): NewsletterAssetListItem | null {
+  if (!isNewsletterSectionTitle(row.title)) return null;
+  return {
     id: row.id,
     title: row.title,
     label: row.label,
@@ -77,7 +79,64 @@ export async function listNewsletterAssets(): Promise<NewsletterAssetListItem[]>
     imageUrl: row.image_url,
     takenOn: row.taken_on,
     createdAt: row.created_at,
-  }));
+  };
+}
+
+export async function listNewsletterAssets(options?: {
+  title?: NewsletterSectionTitle;
+  takenOnFrom?: string;
+  takenOnTo?: string;
+  limit?: number;
+}): Promise<NewsletterAssetListItem[]> {
+  const admin = await requireAdmin();
+  if (!admin.supabase || !admin.userId) return [];
+
+  const limit = Math.min(Math.max(options?.limit ?? 100, 1), 500);
+  let query = admin.supabase
+    .from("newsletter_assets")
+    .select("id, title, label, summary, image_url, taken_on, created_at")
+    .order("created_at", { ascending: false })
+    .limit(limit);
+
+  if (options?.title && isNewsletterSectionTitle(options.title)) {
+    query = query.eq("title", options.title);
+  }
+  if (options?.takenOnFrom && /^\d{4}-\d{2}-\d{2}$/.test(options.takenOnFrom)) {
+    query = query.gte("taken_on", options.takenOnFrom);
+  }
+  if (options?.takenOnTo && /^\d{4}-\d{2}-\d{2}$/.test(options.takenOnTo)) {
+    query = query.lte("taken_on", options.takenOnTo);
+  }
+
+  const { data, error } = await query;
+  if (error || !data) return [];
+  return data.map(mapAsset).filter((item): item is NewsletterAssetListItem => Boolean(item));
+}
+
+function parseAssetFields(formData: FormData) {
+  const titleRaw = String(formData.get("title") ?? "").trim();
+  const label = String(formData.get("label") ?? "").trim();
+  const summary = String(formData.get("summary") ?? "").trim();
+  const takenOnRaw = String(formData.get("takenOn") ?? "").trim() || todayLocalIsoDate();
+  const image = formData.get("image");
+  const file = image instanceof File && image.size > 0 ? image : null;
+
+  if (!titleRaw) return { ok: false as const, error: "Choose a newsletter section title." };
+  if (!isNewsletterSectionTitle(titleRaw)) return { ok: false as const, error: "Invalid section title." };
+  if (label.length < 2) return { ok: false as const, error: "Enter a long label / caption." };
+  if (summary.length < 2) return { ok: false as const, error: "Enter a short summary." };
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(takenOnRaw)) {
+    return { ok: false as const, error: "Date taken must be YYYY-MM-DD." };
+  }
+
+  return {
+    ok: true as const,
+    title: titleRaw,
+    label,
+    summary,
+    takenOn: takenOnRaw,
+    file,
+  };
 }
 
 export async function createNewsletterAsset(formData: FormData) {
@@ -86,24 +145,13 @@ export async function createNewsletterAsset(formData: FormData) {
     return { ok: false as const, error: admin.error ?? "Sign in as an admin." };
   }
 
-  const title = String(formData.get("title") ?? "").trim();
-  const label = String(formData.get("label") ?? "").trim();
-  const summary = String(formData.get("summary") ?? "").trim();
-  const takenOnRaw = String(formData.get("takenOn") ?? "").trim() || todayLocalIsoDate();
-  const image = formData.get("image");
-  const file = image instanceof File ? image : null;
-
-  if (title.length < 2) return { ok: false as const, error: "Enter a title (at least 2 characters)." };
-  if (label.length < 2) return { ok: false as const, error: "Enter a long label / caption." };
-  if (summary.length < 2) return { ok: false as const, error: "Enter a short summary." };
-  if (!/^\d{4}-\d{2}-\d{2}$/.test(takenOnRaw)) {
-    return { ok: false as const, error: "Date taken must be YYYY-MM-DD." };
-  }
-  if (!file || file.size === 0) return { ok: false as const, error: "Upload an image." };
+  const parsed = parseAssetFields(formData);
+  if (!parsed.ok) return parsed;
+  if (!parsed.file) return { ok: false as const, error: "Upload an image." };
 
   let imageUrl: string;
   try {
-    imageUrl = await saveImage(file, title, takenOnRaw);
+    imageUrl = await saveImage(parsed.file, parsed.title, parsed.takenOn);
   } catch (error) {
     return { ok: false as const, error: error instanceof Error ? error.message : "Could not save the image." };
   }
@@ -111,29 +159,88 @@ export async function createNewsletterAsset(formData: FormData) {
   const { data, error } = await admin.supabase
     .from("newsletter_assets")
     .insert({
-      title,
-      label,
-      summary,
+      title: parsed.title,
+      label: parsed.label,
+      summary: parsed.summary,
       image_url: imageUrl,
-      taken_on: takenOnRaw,
+      taken_on: parsed.takenOn,
       created_by: admin.userId,
     })
     .select("id, title, label, summary, image_url, taken_on, created_at")
     .single();
 
-  if (error || !data) return { ok: false as const, error: error?.message ?? "Could not save the asset." };
+  if (error || !data) {
+    await removePublicImage(imageUrl);
+    return { ok: false as const, error: error?.message ?? "Could not save the asset." };
+  }
+
+  const asset = mapAsset(data);
+  if (!asset) return { ok: false as const, error: "Saved row has an invalid section title." };
 
   revalidatePath("/admin/newsletter");
-  return {
-    ok: true as const,
-    asset: {
-      id: data.id,
-      title: data.title,
-      label: data.label,
-      summary: data.summary,
-      imageUrl: data.image_url,
-      takenOn: data.taken_on,
-      createdAt: data.created_at,
-    } satisfies NewsletterAssetListItem,
-  };
+  revalidatePath("/admin");
+  return { ok: true as const, asset };
+}
+
+export async function updateNewsletterAsset(formData: FormData) {
+  const admin = await requireAdmin();
+  if (!admin.supabase || !admin.userId) {
+    return { ok: false as const, error: admin.error ?? "Sign in as an admin." };
+  }
+
+  const id = String(formData.get("id") ?? "").trim();
+  if (!id) return { ok: false as const, error: "Missing asset id." };
+
+  const parsed = parseAssetFields(formData);
+  if (!parsed.ok) return parsed;
+
+  const { data: existing, error: existingError } = await admin.supabase
+    .from("newsletter_assets")
+    .select("id, image_url")
+    .eq("id", id)
+    .maybeSingle();
+  if (existingError || !existing) {
+    return { ok: false as const, error: existingError?.message ?? "That asset was not found." };
+  }
+
+  let imageUrl = existing.image_url;
+  let replacedImage: string | null = null;
+  if (parsed.file) {
+    try {
+      replacedImage = await saveImage(parsed.file, parsed.title, parsed.takenOn);
+      imageUrl = replacedImage;
+    } catch (error) {
+      return { ok: false as const, error: error instanceof Error ? error.message : "Could not save the image." };
+    }
+  }
+
+  const { data, error } = await admin.supabase
+    .from("newsletter_assets")
+    .update({
+      title: parsed.title,
+      label: parsed.label,
+      summary: parsed.summary,
+      image_url: imageUrl,
+      taken_on: parsed.takenOn,
+      updated_at: new Date().toISOString(),
+    })
+    .eq("id", id)
+    .select("id, title, label, summary, image_url, taken_on, created_at")
+    .single();
+
+  if (error || !data) {
+    if (replacedImage) await removePublicImage(replacedImage);
+    return { ok: false as const, error: error?.message ?? "Could not update the asset." };
+  }
+
+  if (replacedImage && existing.image_url !== replacedImage) {
+    await removePublicImage(existing.image_url);
+  }
+
+  const asset = mapAsset(data);
+  if (!asset) return { ok: false as const, error: "Updated row has an invalid section title." };
+
+  revalidatePath("/admin/newsletter");
+  revalidatePath("/admin");
+  return { ok: true as const, asset };
 }

@@ -170,7 +170,7 @@ Editors need a place inside **Self Knowledge Reading admin** to bank **photo sna
 
 | Field | Required | Notes |
 |-------|----------|--------|
-| **Title** | Yes | **Must be exactly one** of the allowed section titles below (UI: dropdown / select — not free text). |
+| **Title** | Yes | **Must be exactly one** of the allowed section titles below (UI: dropdown / select — not free text). Defaults to **Global Assets**. |
 | **Image** (photo snapshot) | Yes (on create) | JPEG / PNG / WebP; max 5 MB. Stored under the app’s public newsletter assets path. |
 | **Label** | Yes | Long caption / label text for the PDF (Telugu-friendly; multi-line). |
 | **Summary** | Yes | Short paragraph explaining context (who, where, why it matters under that section). |
@@ -178,15 +178,16 @@ Editors need a place inside **Self Knowledge Reading admin** to bank **photo sna
 
 ### 7.4 Allowed values for **Title** (closed list)
 
-These align 1:1 with newsletter body sections (§6.2–6.8). Masthead / closing are **not** title options for assets.
+Items **2–8** align 1:1 with newsletter body sections (§6.2–6.8). Masthead / closing are **not** title options for assets.
 
-1. Summary of the themes covered in that month  
-2. Highlight classes of the month  
-3. Few Experiences from Participants  
-4. Dr. Newton's visits and classes in other places  
-5. Vanya Maitreya Highlights  
-6. Goloka, Sahasrara and QLU Updates  
-7. Upcoming Programs/Announcements  
+1. **Global Assets** — default in the admin form. Cross-section inventory: the photo may be used in **any** body section (or masthead/closing) when assembling an issue. Not a printed newsletter heading.  
+2. Summary of the themes covered in that month  
+3. Highlight classes of the month  
+4. Few Experiences from Participants  
+5. Dr. Newton's visits and classes in other places  
+6. Vanya Maitreya Highlights  
+7. Goloka, Sahasrara and QLU Updates  
+8. Upcoming Programs/Announcements  
 
 ### 7.5 Behaviours
 

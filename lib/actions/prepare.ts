@@ -1,14 +1,17 @@
 "use server";
 
-import { mkdir, writeFile } from "node:fs/promises";
-import path from "node:path";
 import { revalidatePath } from "next/cache";
 import { readingPath } from "@/lib/content";
 import { asParagraphs, parseYoutubeId } from "@/lib/content/paragraphs";
+import { saveCoverImage } from "@/lib/media/covers";
 import { slugify } from "@/lib/series";
+import { isLanguage } from "@/lib/language";
 import { createClient } from "@/lib/supabase/server";
 import { minutesFor, sectionId } from "@/lib/transcript/structure.mjs";
 import { captionsAsText, fetchYoutubeCaptions } from "@/lib/youtube/captions";
+import { fetchPlaylistVideos, parseYoutubePlaylistId, safeCaptionFilename } from "@/lib/youtube/playlist";
+import { createStoreZip } from "@/lib/youtube/zip";
+import type { Language } from "@/types/content";
 
 type Built = {
   sectionOrder: number;
@@ -20,8 +23,10 @@ type Built = {
 };
 
 type ParsedDayJson = {
+  dayNumber?: number;
   title?: string;
-  language?: "te" | "en";
+  language?: Language;
+  seriesName?: string;
   youtubeId?: string | null;
   sections: Array<{
     title: string;
@@ -60,22 +65,10 @@ async function ensureSeries(name: string) {
   return { ...admin, series: created };
 }
 
-async function saveCover(file: File | null, slug: string, dayNumber: number) {
-  if (!file || file.size === 0) return null;
-  if (!file.type.startsWith("image/")) throw new Error("Choose an image file.");
-  if (file.size > 5_000_000) throw new Error("Use an image smaller than 5 MB.");
-  const ext = file.type === "image/png" ? "png" : file.type === "image/webp" ? "webp" : "jpg";
-  const filename = `${slug}-day-${dayNumber}.${ext}`;
-  const directory = path.join(process.cwd(), "public", "covers");
-  await mkdir(directory, { recursive: true });
-  await writeFile(path.join(directory, filename), Buffer.from(await file.arrayBuffer()));
-  return `/covers/${filename}`;
-}
-
 function withIds(
   seriesSlug: string,
   dayNumber: number,
-  language: "te" | "en",
+  language: Language,
   sections: Array<{ title: string; content: string[]; minutes: number | null; startSec?: number | null }>,
 ): Built[] {
   return sections.map((section, index) => {
@@ -106,17 +99,39 @@ function asOptionalMinutes(value: unknown): number | null {
   return Math.max(1, Math.round(value));
 }
 
+function dayNumberFromUnknown(value: unknown): number | undefined {
+  if (typeof value === "number" && Number.isInteger(value) && value >= 1 && value <= 31) return value;
+  if (typeof value === "string" && /^\d{1,2}$/.test(value.trim())) {
+    const n = Number(value.trim());
+    if (n >= 1 && n <= 31) return n;
+  }
+  return undefined;
+}
+
+function hintsFromFilename(filename: string | null | undefined): { dayNumber?: number; language?: Language } {
+  if (!filename) return {};
+  const base = filename.replace(/^.*[\\/]/, "");
+  const dayMatch = base.match(/day[_-]?(\d{1,2})/i);
+  const langMatch = base.match(/(?:^|[_\-.])(te|en|kn|hi)(?:[_\-.]|$)/i);
+  const lang = langMatch?.[1]?.toLowerCase();
+  return {
+    dayNumber: dayMatch ? dayNumberFromUnknown(dayMatch[1]) : undefined,
+    language: isLanguage(lang) ? lang : undefined,
+  };
+}
+
 /** Accepts day JSON (`sections` / `content`) or ChatGPT chapter JSON (`chapters` / `paras`). */
-function parseDayJson(raw: string): ParsedDayJson {
+function parseDayJson(raw: string, filename?: string | null): ParsedDayJson {
   let data: unknown;
   try {
     data = JSON.parse(raw);
   } catch {
-    throw new Error("JSON is not valid. Paste the ChatGPT output as a single JSON object.");
+    throw new Error("JSON is not valid. Upload a single JSON object from ChatGPT.");
   }
 
   if (!data || typeof data !== "object") throw new Error("JSON must be an object.");
   const root = data as Record<string, unknown>;
+  const fileHints = hintsFromFilename(filename);
 
   const list = Array.isArray(root.sections)
     ? root.sections
@@ -140,13 +155,41 @@ function parseDayJson(raw: string): ParsedDayJson {
     };
   });
 
-  const language = root.language === "en" ? "en" : root.language === "te" ? "te" : undefined;
-  const youtubeRaw = typeof root.youtubeId === "string" ? root.youtubeId : typeof root.youtube_id === "string" ? root.youtube_id : null;
+  const language = isLanguage(root.language) ? root.language : fileHints.language;
+  const youtubeRaw =
+    typeof root.youtubeId === "string"
+      ? root.youtubeId
+      : typeof root.youtube_id === "string"
+        ? root.youtube_id
+        : null;
   const youtubeId = youtubeRaw ? parseYoutubeId(youtubeRaw) : null;
+  const dayNumber =
+    dayNumberFromUnknown(root.dayNumber) ??
+    dayNumberFromUnknown(root.day_number) ??
+    dayNumberFromUnknown(root.day) ??
+    fileHints.dayNumber;
+
+  const seriesRaw =
+    typeof root.seriesName === "string"
+      ? root.seriesName
+      : typeof root.series_name === "string"
+        ? root.series_name
+        : typeof root.series === "string"
+          ? root.series
+          : undefined;
+  const seriesName = seriesRaw?.trim() || undefined;
+
+  const title =
+    (typeof root.title === "string" ? root.title.trim() : "") ||
+    (typeof root.subtitle === "string" ? root.subtitle.trim() : "") ||
+    sections[0]?.title ||
+    undefined;
 
   return {
-    title: typeof root.title === "string" ? root.title.trim() : undefined,
+    dayNumber,
+    title,
     language,
+    seriesName,
     youtubeId,
     sections,
   };
@@ -177,31 +220,132 @@ export async function downloadYoutubeCaptions(input: { youtube: string; language
   }
 }
 
+export async function downloadYoutubePlaylistCaptions(input: {
+  playlist: string;
+  language: "te" | "en";
+}) {
+  const admin = await requireAdmin();
+  if (!admin.supabase || !admin.userId) {
+    return { ok: false as const, error: admin.error ?? "Sign in as an admin." };
+  }
+
+  const playlistId = parseYoutubePlaylistId(input.playlist);
+  if (!playlistId) return { ok: false as const, error: "Enter a YouTube playlist ID or URL (list=…)." };
+
+  try {
+    const videos = await fetchPlaylistVideos(playlistId, input.language);
+    const entries: Array<{ name: string; data: string }> = [];
+    const failures: Array<{ videoId: string; title: string; error: string }> = [];
+    let okCount = 0;
+    let cueTotal = 0;
+
+    for (const video of videos) {
+      try {
+        const cues = await fetchYoutubeCaptions(video.videoId, input.language);
+        const text = captionsAsText(cues);
+        entries.push({
+          name: safeCaptionFilename(video.index, video.videoId, video.title, input.language),
+          data: `# ${video.title}\n# https://www.youtube.com/watch?v=${video.videoId}\n# language=${input.language}\n\n${text}\n`,
+        });
+        okCount += 1;
+        cueTotal += cues.length;
+      } catch (error) {
+        failures.push({
+          videoId: video.videoId,
+          title: video.title,
+          error: error instanceof Error ? error.message : "Could not download captions.",
+        });
+      }
+    }
+
+    if (!entries.length) {
+      const detail = failures[0]?.error ?? "No caption files were created.";
+      return { ok: false as const, error: `Playlist captions failed. ${detail}` };
+    }
+
+    if (failures.length) {
+      const report = failures
+        .map((item, index) => `${index + 1}. ${item.videoId} — ${item.title}\n   ${item.error}`)
+        .join("\n\n");
+      entries.push({
+        name: "_failures.txt",
+        data: `Playlist ${playlistId}\nSucceeded: ${okCount}\nFailed: ${failures.length}\n\n${report}\n`,
+      });
+    }
+
+    entries.unshift({
+      name: "_manifest.txt",
+      data: [
+        `Playlist: ${playlistId}`,
+        `Language: ${input.language}`,
+        `Videos in playlist (capped): ${videos.length}`,
+        `Caption files: ${okCount}`,
+        `Failures: ${failures.length}`,
+        `Total cue lines: ${cueTotal}`,
+        "",
+        ...entries
+          .filter((entry) => entry.name.endsWith("-captions.txt"))
+          .map((entry) => entry.name),
+        "",
+      ].join("\n"),
+    });
+
+    const zip = createStoreZip(entries);
+    return {
+      ok: true as const,
+      playlistId,
+      language: input.language,
+      videoCount: videos.length,
+      okCount,
+      failCount: failures.length,
+      cueTotal,
+      filename: `${playlistId}-${input.language}-captions.zip`,
+      zipBase64: zip.toString("base64"),
+    };
+  } catch (error) {
+    return {
+      ok: false as const,
+      error: error instanceof Error ? error.message : "Could not download playlist captions.",
+    };
+  }
+}
+
 export async function importJsonReading(formData: FormData) {
-  const seriesName = String(formData.get("series") ?? "");
-  const titleInput = String(formData.get("title") ?? "").trim();
-  const dayNumber = Number(formData.get("day"));
-  const languageField = String(formData.get("language") ?? "te") === "en" ? "en" : "te";
+  const seriesInput = String(formData.get("series") ?? "").trim();
   const youtubeInput = String(formData.get("youtube") ?? "").trim();
   const jsonRaw = String(formData.get("json") ?? "").trim();
+  const jsonFilename = String(formData.get("jsonFilename") ?? "").trim() || null;
   const image = formData.get("image");
   const file = image instanceof File ? image : null;
 
-  if (!Number.isInteger(dayNumber) || dayNumber < 1 || dayNumber > 31) {
-    return { ok: false as const, error: "Choose a day from 1 to 31." };
-  }
-  if (!jsonRaw) return { ok: false as const, error: "Paste or upload the sections JSON." };
+  if (!jsonRaw) return { ok: false as const, error: "Upload the sections JSON." };
 
   let parsed: ParsedDayJson;
   try {
-    parsed = parseDayJson(jsonRaw);
+    parsed = parseDayJson(jsonRaw, jsonFilename);
   } catch (error) {
     return { ok: false as const, error: error instanceof Error ? error.message : "Could not parse JSON." };
   }
 
-  const title = titleInput || parsed.title || "";
-  if (!title) return { ok: false as const, error: "Enter a title for this day (or include title in the JSON)." };
-  const language = parsed.language ?? languageField;
+  const forceLanguageRaw = String(formData.get("forceLanguage") ?? "").trim();
+  const forceLanguage = isLanguage(forceLanguageRaw) ? forceLanguageRaw : null;
+  const forceDayNumber = dayNumberFromUnknown(formData.get("forceDayNumber"));
+
+  const seriesName = seriesInput || parsed.seriesName || "";
+  if (seriesName.length < 2) {
+    return { ok: false as const, error: "Enter the series name in Import JSON (or include series in the file)." };
+  }
+
+  const dayNumber = forceDayNumber ?? parsed.dayNumber;
+  if (!dayNumber || dayNumber < 1 || dayNumber > 31) {
+    return {
+      ok: false as const,
+      error: 'JSON needs "dayNumber" (1–31), or name the file like day-01-te.json.',
+    };
+  }
+
+  const title = parsed.title?.trim() || `Day ${dayNumber}`;
+  const language = forceLanguage ?? parsed.language ?? "te";
   const videoId = youtubeInput ? parseYoutubeId(youtubeInput) : parsed.youtubeId;
   if (youtubeInput && !videoId) return { ok: false as const, error: "Enter a valid YouTube video ID or URL." };
 
@@ -212,7 +356,7 @@ export async function importJsonReading(formData: FormData) {
 
   let coverUrl: string | null = null;
   try {
-    coverUrl = await saveCover(file, ready.series.slug, dayNumber);
+    coverUrl = await saveCoverImage(file, ready.series.slug, dayNumber, language);
   } catch (error) {
     return { ok: false as const, error: error instanceof Error ? error.message : "Could not save the image." };
   }
@@ -255,7 +399,7 @@ async function writeDay(input: {
   seriesId: number;
   seriesSlug: string;
   dayNumber: number;
-  language: "te" | "en";
+  language: Language;
   title: string;
   coverUrl: string | null;
   youtubeId?: string | null;
@@ -266,7 +410,7 @@ async function writeDay(input: {
     day_number: number;
     title: string;
     subtitle: string;
-    language: "te" | "en";
+    language: Language;
     published: boolean;
     cover_url?: string;
     youtube_id?: string | null;

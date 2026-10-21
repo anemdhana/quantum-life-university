@@ -1,3 +1,4 @@
+import { parseLanguage } from "@/lib/language";
 import { createClient } from "@/lib/supabase/server";
 import type { Language } from "@/types/content";
 
@@ -14,6 +15,9 @@ export type DashboardBookmark = {
   id: string;
   dayNumber: number;
   sectionId: string;
+  sectionOrder: number;
+  seriesSlug: string;
+  language: Language;
   label: string | null;
   sectionTitle: string | null;
 };
@@ -41,6 +45,56 @@ export const emptyDashboard: DashboardData = {
   bookmarks: [],
 };
 
+type SectionLoc = {
+  title: string;
+  sectionOrder: number;
+  dayNumber: number;
+  language: Language;
+  seriesSlug: string;
+};
+
+async function loadSectionLocations(
+  supabase: NonNullable<Awaited<ReturnType<typeof createClient>>>,
+  sectionIds: string[],
+): Promise<Map<string, SectionLoc>> {
+  const map = new Map<string, SectionLoc>();
+  const unique = [...new Set(sectionIds.filter(Boolean))];
+  if (!unique.length) return map;
+
+  const { data: sections } = await supabase
+    .from("sections")
+    .select("id, title, section_order, day_id")
+    .in("id", unique);
+  if (!sections?.length) return map;
+
+  const dayIds = [...new Set(sections.map((section) => section.day_id).filter(Boolean))];
+  const { data: days } = await supabase
+    .from("days")
+    .select("id, day_number, language, series_id")
+    .in("id", dayIds);
+  if (!days?.length) return map;
+
+  const seriesIds = [...new Set(days.map((day) => day.series_id).filter(Boolean))];
+  const { data: seriesRows } = await supabase.from("series").select("id, slug").in("id", seriesIds);
+  const seriesById = new Map((seriesRows ?? []).map((row) => [row.id, row.slug]));
+  const dayById = new Map((days ?? []).map((day) => [day.id, day]));
+
+  for (const section of sections) {
+    const day = dayById.get(section.day_id);
+    if (!day) continue;
+    const seriesSlug = seriesById.get(day.series_id);
+    if (!seriesSlug) continue;
+    map.set(section.id, {
+      title: section.title,
+      sectionOrder: section.section_order,
+      dayNumber: day.day_number,
+      language: parseLanguage(day.language),
+      seriesSlug,
+    });
+  }
+  return map;
+}
+
 export async function loadDashboard(): Promise<DashboardData> {
   const supabase = await createClient();
   if (!supabase) return emptyDashboard;
@@ -48,11 +102,7 @@ export async function loadDashboard(): Promise<DashboardData> {
   const { data: auth } = await supabase.auth.getUser();
   if (!auth.user) return emptyDashboard;
 
-  const { data: profile } = await supabase
-    .from("profiles")
-    .select("role")
-    .eq("id", auth.user.id)
-    .maybeSingle();
+  const { data: profile } = await supabase.from("profiles").select("role").eq("id", auth.user.id).maybeSingle();
 
   const [progressResult, highlightResult, bookmarkResult] = await Promise.all([
     supabase
@@ -79,24 +129,22 @@ export async function loadDashboard(): Promise<DashboardData> {
     ...(bookmarkResult.data ?? []).map((row) => row.section_id),
   ].filter((id): id is string => Boolean(id));
 
-  const titles = new Map<string, string>();
-  if (sectionIds.length > 0) {
-    const { data: sections } = await supabase.from("sections").select("id, title").in("id", sectionIds);
-    sections?.forEach((section) => titles.set(section.id, section.title));
-  }
+  const locations = await loadSectionLocations(supabase, sectionIds);
 
   const progress = progressResult.data;
+  const progressLoc = progress?.section_id ? locations.get(progress.section_id) : undefined;
+
   return {
     email: auth.user.email ?? null,
     role: profile?.role ?? null,
     progress: progress
       ? {
-          seriesSlug: progress.series_slug || "jnanodayam",
+          seriesSlug: progress.series_slug || progressLoc?.seriesSlug || "devi-navaratrula-jnanam",
           dayNumber: progress.day_number,
-          language: progress.language,
+          language: parseLanguage(progress.language),
           sectionOrder: progress.section_order,
           spreadIndex: progress.spread_index,
-          sectionTitle: progress.section_id ? titles.get(progress.section_id) ?? null : null,
+          sectionTitle: progressLoc?.title ?? null,
         }
       : null,
     highlights: (highlightResult.data ?? []).map((row) => ({
@@ -105,14 +153,23 @@ export async function loadDashboard(): Promise<DashboardData> {
       selectedText: row.selected_text,
       noteText: row.note_text,
       voiceNoteUrl: row.voice_note_url,
-      sectionTitle: titles.get(row.section_id) ?? null,
+      sectionTitle: locations.get(row.section_id)?.title ?? null,
     })),
-    bookmarks: (bookmarkResult.data ?? []).map((row) => ({
-      id: row.id,
-      dayNumber: row.day_number,
-      sectionId: row.section_id,
-      label: row.label,
-      sectionTitle: titles.get(row.section_id) ?? null,
-    })),
+    bookmarks: (bookmarkResult.data ?? []).flatMap((row) => {
+      const loc = locations.get(row.section_id);
+      if (!loc) return [];
+      return [
+        {
+          id: row.id,
+          dayNumber: loc.dayNumber,
+          sectionId: row.section_id,
+          sectionOrder: loc.sectionOrder,
+          seriesSlug: loc.seriesSlug,
+          language: loc.language,
+          label: row.label,
+          sectionTitle: loc.title,
+        },
+      ];
+    }),
   };
 }

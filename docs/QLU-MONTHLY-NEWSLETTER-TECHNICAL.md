@@ -52,6 +52,7 @@ Indexes:
 Must match requirements §7.4 exactly (English strings as stored keys):
 
 ```text
+Global Assets
 Summary of the themes covered in that month
 Highlight classes of the month
 Few Experiences from Participants
@@ -61,12 +62,15 @@ Goloka, Sahasrara and QLU Updates
 Upcoming Programs/Announcements
 ```
 
+**Global Assets:** inventory tag for photos that apply to **any** newsletter section (not a PDF body heading). Admin UI defaults new rows to this title. Export packs should include a `sections/` file for it (or fold into a shared pool) so AI/designers can place those images where needed.
+
 Recommended DB enforcement:
 
 ```sql
 alter table public.newsletter_assets
   add constraint newsletter_assets_title_check
   check (title in (
+    'Global Assets',
     'Summary of the themes covered in that month',
     'Highlight classes of the month',
     'Few Experiences from Participants',
@@ -77,12 +81,13 @@ alter table public.newsletter_assets
   ));
 ```
 
-App layer: shared constant array + `<select>` only (reject free text on the server action).
+App layer: shared constant array + `<select>` only (reject free text on the server action). Default: `DEFAULT_NEWSLETTER_SECTION_TITLE = "Global Assets"`.
 
 Stable machine keys (optional rename later without breaking UI labels):
 
 | `title` (stored / displayed) | Suggested `section_key` (future) |
 |------------------------------|----------------------------------|
+| Global Assets | `global` |
 | Summary of the themes… | `themes` |
 | Highlight classes… | `highlight_classes` |
 | Few Experiences… | `experiences` |
@@ -145,7 +150,7 @@ Nav: **Admin → Newsletter** (`AdminNav`).
 
 | Field | Default | Validation |
 |-------|---------|------------|
-| Title | first option or empty “Select section…” | required; must be in `NEWSLETTER_SECTION_TITLES` |
+| Title | **Global Assets** (default) | required; must be in `NEWSLETTER_SECTION_TITLES` |
 | Image (photo snapshot) | none | required on create; type + size |
 | Label | empty | trim, min 2 chars |
 | Summary | empty | trim, min 2 chars |
@@ -250,6 +255,7 @@ Editor uploads zip (or folder) to ChatGPT / Grok with the suggested prompt
 
 ```ts
 type NewsletterSectionTitle =
+  | "Global Assets"
   | "Summary of the themes covered in that month"
   | "Highlight classes of the month"
   | "Few Experiences from Participants"

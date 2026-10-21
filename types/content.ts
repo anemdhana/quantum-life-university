@@ -1,4 +1,4 @@
-export type Language = "te" | "en";
+export type Language = "te" | "en" | "kn" | "hi";
 
 export type ReaderSection = {
   id: string;

@@ -31,6 +31,7 @@ Newsletter photo snapshots are managed through admin server actions in `lib/acti
 ```ts
 /** Closed set — must match requirements §7.4 / technical §2.2 */
 type NewsletterSectionTitle =
+  | "Global Assets"
   | "Summary of the themes covered in that month"
   | "Highlight classes of the month"
   | "Few Experiences from Participants"
@@ -55,7 +56,8 @@ type ActionError = { ok: false; error: string };
 Constant (single source of truth in app code):
 
 ```ts
-export const NEWSLETTER_SECTION_TITLES: readonly NewsletterSectionTitle[] = [ /* seven strings */ ];
+export const NEWSLETTER_SECTION_TITLES: readonly NewsletterSectionTitle[] = [ /* eight strings; first = Global Assets */ ];
+export const DEFAULT_NEWSLETTER_SECTION_TITLE = "Global Assets";
 ```
 
 ---

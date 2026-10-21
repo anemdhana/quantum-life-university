@@ -6,6 +6,7 @@ import { HighlightToolbar } from "@/components/reader/HighlightToolbar";
 import { createHighlight, toggleBookmark } from "@/lib/actions/highlights";
 import { saveProgress } from "@/lib/actions/progress";
 import { formatClock, youtubeWatchUrl } from "@/lib/content/paragraphs";
+import { languageSwitchLabel } from "@/lib/language";
 import { readingPath } from "@/lib/series";
 import type { Language, ReaderDay } from "@/types/content";
 import "./reader.css";
@@ -28,6 +29,7 @@ type Props = {
   dayNumbers?: number[];
   initialSection?: number;
   initialSpread?: number;
+  canEdit?: boolean;
 };
 
 function withMarks(text: string, marks: string[]) {
@@ -57,6 +59,7 @@ export function TwoPageReader({
   dayNumbers,
   initialSection = 1,
   initialSpread = 0,
+  canEdit = false,
 }: Props) {
   const startChapter = Math.min(Math.max(initialSection, 1), day.sections.length) - 1;
   const [chapter, setChapter] = useState(startChapter);
@@ -272,12 +275,15 @@ export function TwoPageReader({
           <div className="tools">
             {languages.length > 1 ? (
               <span className="lang-switch">
-                <Link className={day.language === "te" ? "active" : undefined} href={readingPath(day.series, day.dayNumber, "te", section.sectionOrder)}>
-                  తె
-                </Link>
-                <Link className={day.language === "en" ? "active" : undefined} href={readingPath(day.series, day.dayNumber, "en", section.sectionOrder)}>
-                  EN
-                </Link>
+                {languages.map((lang) => (
+                  <Link
+                    key={lang}
+                    className={day.language === lang ? "active" : undefined}
+                    href={readingPath(day.series, day.dayNumber, lang, section.sectionOrder)}
+                  >
+                    {languageSwitchLabel(lang)}
+                  </Link>
+                ))}
               </span>
             ) : null}
             <span className="read-time">~{section.minutes ?? "–"} min</span>
@@ -296,9 +302,14 @@ export function TwoPageReader({
             >
               A±
             </button>
-            <Link className="uk-button uk-button-default uk-button-small" href={`/admin/edit/${day.dayNumber}/${section.sectionOrder}?lang=${day.language}&series=${day.series}`}>
-              Edit
-            </Link>
+            {canEdit ? (
+              <Link
+                className="uk-button uk-button-default uk-button-small"
+                href={`/admin/edit/${day.dayNumber}/${section.sectionOrder}?lang=${day.language}&series=${day.series}`}
+              >
+                Edit
+              </Link>
+            ) : null}
           </div>
         </header>
         <div className="reader">

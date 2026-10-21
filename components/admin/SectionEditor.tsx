@@ -3,9 +3,10 @@
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useState, useTransition } from "react";
-import { fetchSection, updateSection } from "@/lib/actions/admin";
+import { fetchSection, updateDayCover, updateSection } from "@/lib/actions/admin";
 import { formatClock, youtubeWatchUrl } from "@/lib/content/paragraphs";
 import { readingPath } from "@/lib/series";
+import { languageCode, languageLabel } from "@/lib/language";
 import { SECTION_PLACEHOLDER, type Language, type ReaderSection, type SectionOutline } from "@/types/content";
 import "@/components/reader/reader.css";
 
@@ -14,6 +15,7 @@ type Props = {
   seriesName: string;
   dayNumber: number;
   language: Language;
+  coverUrl: string | null;
   youtubeId: string | null;
   section: ReaderSection;
   sections: SectionOutline[];
@@ -194,7 +196,96 @@ function SectionPane({
   );
 }
 
-export function SectionEditor({ series, seriesName, dayNumber, language, youtubeId, section, sections: initialSections }: Props) {
+function DayCoverPanel({
+  series,
+  dayNumber,
+  language,
+  coverUrl: initialCoverUrl,
+}: {
+  series: string;
+  dayNumber: number;
+  language: Language;
+  coverUrl: string | null;
+}) {
+  const router = useRouter();
+  const [coverUrl, setCoverUrl] = useState(initialCoverUrl);
+  const [message, setMessage] = useState<string | null>(null);
+  const [pending, setPending] = useState(false);
+
+  async function onUpload(file: File | null) {
+    if (!file) return;
+    setPending(true);
+    setMessage(null);
+    const data = new FormData();
+    data.set("series", series);
+    data.set("dayNumber", String(dayNumber));
+    data.set("language", language);
+    data.set("image", file);
+    const result = await updateDayCover(data);
+    setPending(false);
+    if (!result.ok) {
+      setMessage(result.error);
+      return;
+    }
+    setCoverUrl(result.coverUrl);
+    setMessage("Cover saved.");
+    router.refresh();
+  }
+
+  async function onClear() {
+    if (!coverUrl) return;
+    if (!window.confirm("Remove this day’s cover image?")) return;
+    setPending(true);
+    setMessage(null);
+    const data = new FormData();
+    data.set("series", series);
+    data.set("dayNumber", String(dayNumber));
+    data.set("language", language);
+    data.set("clear", "1");
+    const result = await updateDayCover(data);
+    setPending(false);
+    if (!result.ok) {
+      setMessage(result.error);
+      return;
+    }
+    setCoverUrl(null);
+    setMessage("Cover removed.");
+    router.refresh();
+  }
+
+  return (
+    <div className="admin-day-cover">
+      <p className="admin-panel-label">Day cover</p>
+      {coverUrl ? <img src={coverUrl} alt="" className="admin-day-cover-preview" /> : <p className="muted">No cover yet.</p>}
+      <label className="admin-day-cover-upload">
+        <span>{pending ? "Saving…" : coverUrl ? "Replace image" : "Upload image"}</span>
+        <input
+          type="file"
+          accept="image/jpeg,image/png,image/webp"
+          disabled={pending}
+          onChange={(event) => void onUpload(event.target.files?.[0] ?? null)}
+        />
+      </label>
+      {coverUrl ? (
+        <button type="button" className="admin-text-danger" disabled={pending} onClick={() => void onClear()}>
+          Remove
+        </button>
+      ) : null}
+      {message ? <p className={message.includes("saved") || message.includes("removed") ? "muted" : "uk-text-danger"}>{message}</p> : null}
+    </div>
+  );
+}
+
+export function SectionEditor({
+  series,
+  seriesName,
+  dayNumber,
+  language,
+  coverUrl,
+  youtubeId,
+  section,
+  sections: initialSections,
+}: Props) {
   const router = useRouter();
   const [sections, setSections] = useState(initialSections);
   const [active, setActive] = useState(section);
@@ -232,7 +323,7 @@ export function SectionEditor({ series, seriesName, dayNumber, language, youtube
       <header className="admin-page-head">
         <h1 className={language === "te" ? "lang-te" : undefined}>{active.title}</h1>
         <p className="muted">
-          {seriesName} · Day {dayNumber} · {language === "te" ? "Telugu" : "English"}
+          {seriesName} · Day {dayNumber} · {languageLabel(language)}
           {paneBusy ? " · Loading…" : ""}
         </p>
       </header>
@@ -245,8 +336,15 @@ export function SectionEditor({ series, seriesName, dayNumber, language, youtube
             <Link href={readingPath(series, dayNumber, language, active.sectionOrder)}>Preview</Link>
           </div>
           <p className="admin-panel-label">
-            Day {dayNumber} · {language === "te" ? "TE" : "EN"}
+            Day {dayNumber} · {languageCode(language)}
           </p>
+          <DayCoverPanel
+            key={`${series}-${dayNumber}-${language}-${coverUrl ?? "none"}`}
+            series={series}
+            dayNumber={dayNumber}
+            language={language}
+            coverUrl={coverUrl}
+          />
           <ul>
             {sections.map((item) => {
               const activeItem = item.sectionOrder === active.sectionOrder;

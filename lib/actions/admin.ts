@@ -3,6 +3,8 @@
 import { revalidatePath } from "next/cache";
 import { loadSection } from "@/lib/content";
 import { asParagraphs } from "@/lib/content/paragraphs";
+import { parseLanguage } from "@/lib/language";
+import { saveCoverImage } from "@/lib/media/covers";
 import { createClient } from "@/lib/supabase/server";
 import type { Language } from "@/types/content";
 
@@ -22,6 +24,8 @@ export async function fetchSection(input: {
   language: Language;
   sectionOrder: number;
 }) {
+  const admin = await requireAdmin();
+  if (!admin.supabase || !admin.userId) return { ok: false as const, error: admin.error ?? "Only an admin can edit sections." };
   const section = await loadSection(input.series, input.dayNumber, input.language, input.sectionOrder);
   if (!section) return { ok: false as const, error: "That section was not found." };
   return { ok: true as const, section };
@@ -61,4 +65,50 @@ export async function updateSection(input: {
   revalidatePath(`/series`);
   revalidatePath("/admin");
   return { ok: true as const };
+}
+
+export async function updateDayCover(formData: FormData) {
+  const admin = await requireAdmin();
+  if (!admin.supabase || !admin.userId) return { ok: false as const, error: admin.error ?? "Sign in as an admin to save." };
+
+  const series = String(formData.get("series") ?? "").trim();
+  const dayNumber = Number(formData.get("dayNumber"));
+  const language: Language = parseLanguage(formData.get("language"));
+  const image = formData.get("image");
+  const file = image instanceof File ? image : null;
+  const clear = String(formData.get("clear") ?? "") === "1";
+
+  if (!series || !Number.isInteger(dayNumber) || dayNumber < 1) {
+    return { ok: false as const, error: "Missing series or day." };
+  }
+
+  const { data: parent } = await admin.supabase.from("series").select("id, slug").eq("slug", series).maybeSingle();
+  if (!parent) return { ok: false as const, error: "That series was not found." };
+
+  let coverUrl: string | null = null;
+  if (clear) {
+    coverUrl = null;
+  } else {
+    try {
+      coverUrl = await saveCoverImage(file, parent.slug, dayNumber, language);
+    } catch (error) {
+      return { ok: false as const, error: error instanceof Error ? error.message : "Could not save the image." };
+    }
+    if (!coverUrl) return { ok: false as const, error: "Choose an image to upload." };
+  }
+
+  const { error } = await admin.supabase
+    .from("days")
+    .update({ cover_url: coverUrl })
+    .eq("series_id", parent.id)
+    .eq("day_number", dayNumber)
+    .eq("language", language);
+
+  if (error) return { ok: false as const, error: error.message };
+
+  revalidatePath("/");
+  revalidatePath("/admin");
+  revalidatePath(`/series/${series}/day/${dayNumber}`);
+  revalidatePath(`/admin/edit/${dayNumber}`);
+  return { ok: true as const, coverUrl };
 }

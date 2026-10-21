@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { SitePage } from "@/components/SitePage";
 import { loadLibrary, readingPath } from "@/lib/content";
+import { languageLabel } from "@/lib/language";
 
 function hasTelugu(name: string) {
   return /[\u0C00-\u0C7F]/.test(name);

@@ -2,6 +2,7 @@ import { cache } from "react";
 import { asParagraphs } from "@/lib/content/paragraphs";
 import { readingPath } from "@/lib/series";
 import { createClient } from "@/lib/supabase/server";
+import { parseLanguage, sortLanguages } from "@/lib/language";
 import type { Language, LibrarySeries, ReaderDay, ReaderSection, SectionOutline } from "@/types/content";
 
 export { readingPath };
@@ -81,16 +82,14 @@ function groupDays(
       entry.days.push(day);
     }
     if (row.cover_url) day.coverUrl = row.cover_url;
-    const language: Language = row.language === "en" ? "en" : "te";
+    const language = parseLanguage(row.language);
     if (language === "te") day.title = row.title;
     if (!day.languages.includes(language)) day.languages.push(language);
   }
   for (const entry of series.values()) {
     entry.days.sort((a, b) => a.dayNumber - b.dayNumber);
     for (const day of entry.days) {
-      day.languages = [...new Set(day.languages)].sort((a, b) =>
-        a === "te" ? -1 : b === "te" ? 1 : a.localeCompare(b),
-      );
+      day.languages = sortLanguages(day.languages);
     }
   }
   return [...series.values()];
@@ -183,16 +182,13 @@ export const listDayLanguages = cache(async (series: string, dayNumber: number):
       .eq("series_id", parent.id)
       .eq("day_number", dayNumber)
       .eq("published", true);
-    return [...new Set((days ?? []).map((day) => (day.language === "en" ? "en" : "te") as Language))].sort((a, b) =>
-      a === "te" ? -1 : b === "te" ? 1 : a.localeCompare(b),
-    );
+    return sortLanguages((days ?? []).map((day) => parseLanguage(day.language)));
   }
 
   const localDays = await loadLocalDays();
-  return localDays
-    .filter((day) => day.series === series && day.dayNumber === dayNumber)
-    .map((day) => day.language)
-    .sort((a, b) => (a === "te" ? -1 : b === "te" ? 1 : a.localeCompare(b)));
+  return sortLanguages(
+    localDays.filter((day) => day.series === series && day.dayNumber === dayNumber).map((day) => day.language),
+  );
 });
 
 export const loadDay = cache(async (series: string, dayNumber: number, language: Language): Promise<ReaderDay | null> => {
@@ -251,6 +247,7 @@ export type DayOutline = {
   series: string;
   seriesName: string;
   title: string;
+  coverUrl: string | null;
   youtubeId: string | null;
   sections: SectionOutline[];
 };
@@ -264,7 +261,7 @@ export const loadDayOutline = cache(async (series: string, dayNumber: number, la
 
     const { data: day } = await supabase
       .from("days")
-      .select("id, day_number, title, language, published, youtube_id")
+      .select("id, day_number, title, language, published, cover_url, youtube_id")
       .eq("series_id", parent.id)
       .eq("day_number", dayNumber)
       .eq("language", language)
@@ -286,6 +283,7 @@ export const loadDayOutline = cache(async (series: string, dayNumber: number, la
       series: parent.slug,
       seriesName: parent.name,
       title: day.title,
+      coverUrl: day.cover_url ?? null,
       youtubeId: day.youtube_id ?? null,
       sections: sections.map(
         (section): SectionOutline => ({
@@ -307,6 +305,7 @@ export const loadDayOutline = cache(async (series: string, dayNumber: number, la
     series: day.series,
     seriesName: day.seriesName,
     title: day.title,
+    coverUrl: day.coverUrl,
     youtubeId: day.youtubeId,
     sections: day.sections.map(
       (section): SectionOutline => ({

@@ -3,7 +3,9 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { SitePage } from "@/components/SitePage";
 import { TwoPageReader } from "@/components/reader/TwoPageReader";
+import { isAdminUser } from "@/lib/auth/profile";
 import { listDayLanguages, loadDay, loadLibrary } from "@/lib/content";
+import { parseLanguage } from "@/lib/language";
 import type { Language } from "@/types/content";
 
 type Props = {
@@ -12,7 +14,7 @@ type Props = {
 };
 
 function languageOf(value: string | undefined): Language {
-  return value === "en" ? "en" : "te";
+  return parseLanguage(value);
 }
 
 export async function generateMetadata({ params, searchParams }: Props): Promise<Metadata> {
@@ -30,10 +32,11 @@ export default async function SeriesDayPage({ params, searchParams }: Props) {
   if (!Number.isInteger(dayNumber) || dayNumber < 1 || dayNumber > 31) notFound();
 
   const language = languageOf(query.lang);
-  const [content, languages, library] = await Promise.all([
+  const [content, languages, library, canEdit] = await Promise.all([
     loadDay(series, dayNumber, language),
     listDayLanguages(series, dayNumber),
     loadLibrary(),
+    isAdminUser(),
   ]);
 
   if (!content) {
@@ -62,6 +65,7 @@ export default async function SeriesDayPage({ params, searchParams }: Props) {
       dayNumbers={dayNumbers.length ? dayNumbers : [dayNumber]}
       initialSection={Number.isFinite(section) ? section : 1}
       initialSpread={Number.isFinite(spread) ? spread : 0}
+      canEdit={canEdit}
     />
   );
 }

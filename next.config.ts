@@ -6,6 +6,10 @@ const nextConfig: NextConfig = {
   outputFileTracingRoot: path.join(process.cwd()),
   experimental: {
     optimizePackageImports: ["@supabase/ssr", "@supabase/supabase-js"],
+    // Day JSON + optional cover image can exceed the 1 MB default.
+    serverActions: {
+      bodySizeLimit: "12mb",
+    },
   },
 };
 

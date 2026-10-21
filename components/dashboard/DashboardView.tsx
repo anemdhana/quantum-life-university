@@ -66,7 +66,7 @@ export function DashboardView({ data }: { data: DashboardData }) {
           <ul className="uk-list">
             {data.bookmarks.map((item) => (
               <li key={item.id}>
-                <Link href={`/day/${item.dayNumber}`}>
+                <Link href={readingPath(item.seriesSlug, item.dayNumber, item.language, item.sectionOrder)}>
                   Day {item.dayNumber}
                   {item.sectionTitle ? ` · ${item.sectionTitle}` : ""}
                 </Link>

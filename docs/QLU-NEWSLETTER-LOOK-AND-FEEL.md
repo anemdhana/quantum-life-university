@@ -153,24 +153,41 @@ Each section starts on a clear visual break (gold hairline or spacing). Do not m
 
 When given this look-and-feel file + a month’s resource folder:
 
-1. A **complete Telugu newsletter draft** structured with the seven headings above, following section/photo Instructions.  
-2. Explicit **image placement notes** (`[Image: images/….jpg — title: … — subtitle: …]`).  
-3. Optional: a one-page English outline for editors (secondary).  
-4. **Not** required: final print-ready PDF binary unless the tool can export PDF with embedded Telugu fonts — then follow this brief.
+1. **Primary:** a **print-ready soft PDF** (A4, embedded Telugu fonts) that a reader can open — not a debug dump.  
+2. Optional **in the chat only** (never inside the PDF): a short checklist of which section/photo Instructions you followed, and image file names used.  
+3. If PDF export with Telugu fonts is impossible: a complete Telugu draft + placement notes for a designer.
 
-If content is thin, say so under the section rather than inventing stories.
+If content is thin, omit the section or use one quiet Telugu line — do not invent stories and do not print English “no data was provided” essays.
+
+---
+
+## 9.1 PDF anti-patterns (do not ship)
+
+These showed up in weak exports — treat as hard fails:
+
+| Avoid | Do instead |
+|-------|------------|
+| Printing `[Layout applied: …]` or `[Image: images/…]` in the PDF | Apply layout silently; embed the image |
+| Full-page brown “content cage” with a large empty lower half | Soft paper flow; hairline rules; fill or continue next section |
+| Pages 1–2 as a long Global Assets founders biography in a framed box | Calm masthead + optional compact founders strip; body from page 2 |
+| Stacking empty sections each with “no report” + layout meta | Omit empty headings, or one quiet line only |
+| Placeholder text (`Add summary…`, slug labels like `DrNewton` as titles) | Skip unfinished assets |
+| Broken Telugu / missing glyphs | Embed Noto Sans Telugu (or equivalent) |
+| Same photo pasted into unrelated sections | One photo per asset file; don’t recycle across sections |
 
 ---
 
 ## 10. Checklist before “done”
 
 - [ ] A4, paper `#fffdf8`, ink `#352d26`, gold accents `#a17b43`  
-- [ ] Seven sections in correct order  
-- [ ] Section/photo Instructions applied (calm single-column only when none)  
-- [ ] Telugu body; no invented teachings  
+- [ ] Sections in correct order; empty ones omitted or one quiet line  
+- [ ] Section/photo Instructions applied (calm single-column only when none) — **not printed as text**  
+- [ ] Telugu body with embedded fonts; no invented teachings  
 - [ ] Label → title/subtitle; Summary → topic content; Instruction → presentation only  
-- [ ] Calm masthead; QLU identity present  
+- [ ] Calm masthead; QLU identity present; Global Assets not a multi-page dump  
+- [ ] Real images embedded; no image-path strings in body  
 - [ ] Footer with brand + page numbers  
+- [ ] No full-page empty frames; pages feel filled  
 - [ ] File-size / length targets respected  
 
 ---

@@ -50,6 +50,7 @@
     padding: 10px 12px; font: inherit; background: var(--paper); color: var(--ink);
   }
   textarea { min-height: 180px; resize: vertical; line-height: 1.6; }
+  #instruction { min-height: 88px; }
   #promptOut, #result { min-height: 160px; font-size: .95rem; }
   .check {
     display: flex; gap: 10px; align-items: flex-start;
@@ -92,7 +93,7 @@
   <p class="crumb"><a href="./index.html">← Tools</a></p>
   <p class="brand">Quantum Life University</p>
   <h1>Beautify text · newsletter style</h1>
-  <p class="sub">The ChatGPT prompt updates as you type. Paste rough notes, or check that you’ll attach a <code>.txt</code> in the ChatGPT chat. Copy → ChatGPT → paste the polished result back here.</p>
+  <p class="sub">The ChatGPT prompt updates as you type. Give SOURCE via paste, attach-<code>.txt</code> checkbox, or a public URL. Add an Instruction for how it should look. Copy → ChatGPT → paste the polished result back here.</p>
 
   <div class="grid">
     <div class="panel">
@@ -126,13 +127,23 @@
         <input id="attachTxt" type="checkbox">
         <div>
           I will attach a <strong>.txt</strong> in the ChatGPT chat
-          <span>Prompt will tell ChatGPT to use that attachment as SOURCE. Rough text below is optional notes.</span>
+          <span>Use that attachment as SOURCE. Rough text / URL below become optional notes.</span>
         </div>
       </label>
-      <label for="source">Your rough text <span id="sourceHint">(required unless attaching .txt)</span></label>
-      <textarea id="source" spellcheck="true" placeholder="Paste notes, voice draft, or English bullets…"></textarea>
+      <div class="field" style="margin-top:0">
+        <label for="sourceUrl">Public URL (if no .txt at hand)</label>
+        <input id="sourceUrl" type="url" inputmode="url" placeholder="https://… (page or raw .txt ChatGPT can open)" autocomplete="off">
+      </div>
+      <div class="field">
+        <label for="instruction">Instruction</label>
+        <textarea id="instruction" spellcheck="true" placeholder="How to present this — e.g. 2-column bullets, short pull-quote, keep under 120 words, calm Telugu…"></textarea>
+      </div>
+      <div class="field">
+        <label for="source">Your rough text <span id="sourceHint">(or URL / attach .txt)</span></label>
+        <textarea id="source" spellcheck="true" placeholder="Paste notes, voice draft, or English bullets…"></textarea>
+      </div>
       <div class="row">
-        <button type="button" id="clearSrc">Clear text</button>
+        <button type="button" id="clearSrc">Clear text &amp; URL</button>
         <span class="status" id="status" aria-live="polite"></span>
       </div>
     </div>
@@ -163,7 +174,7 @@
     <summary>Style rules baked into the prompt</summary>
     <div class="brief" id="styleBrief"></div>
   </details>
-  <p class="note">Do not invent teachings — only polish the source. If the checkbox is on, attach your <code>.txt</code> in ChatGPT after pasting this prompt. This tool is for <strong>wording</strong> only.</p>
+  <p class="note">Do not invent teachings — only polish the SOURCE (paste, attached .txt, or public URL). Follow Instruction for presentation only. This tool is for <strong>wording</strong> only.</p>
 </main>
 <script>
 const SECTIONS = [
@@ -192,6 +203,8 @@ const issueEl = document.getElementById("issue");
 const langEl = document.getElementById("lang");
 const formEl = document.getElementById("form");
 const attachEl = document.getElementById("attachTxt");
+const sourceUrlEl = document.getElementById("sourceUrl");
+const instructionEl = document.getElementById("instruction");
 const sourceEl = document.getElementById("source");
 const sourceHint = document.getElementById("sourceHint");
 const promptOut = document.getElementById("promptOut");
@@ -238,7 +251,24 @@ function formLine() {
   }
 }
 
-function promptHeader(sec, issueLine) {
+function normalizeUrl(raw) {
+  const u = raw.trim();
+  if (!u) return "";
+  if (/^https?:\/\//i.test(u)) return u;
+  return `https://${u}`;
+}
+
+function instructionBlock(instruction) {
+  if (!instruction) return "";
+  return `
+Instruction (MUST FOLLOW — presentation only, not new facts)
+\`\`\`
+${instruction}
+\`\`\`
+`;
+}
+
+function promptHeader(sec, issueLine, instruction) {
   return `You are helping edit copy for the Quantum Life University (QLU) monthly newsletter (నెలవారీ వార్తాపత్రిక).
 
 ${issueLine}
@@ -248,7 +278,7 @@ Section heading (keep this exact English title if you include a heading):
 Section content budget: ${sec.budget}
 ${langLine()}
 ${formLine()}
-
+${instructionBlock(instruction)}
 Style
 ${STYLE_BRIEF}
 `;
@@ -257,36 +287,61 @@ ${STYLE_BRIEF}
 function buildPrompt() {
   const notes = sourceEl.value.trim();
   const attach = attachEl.checked;
-  if (!attach && !notes) return "";
+  const url = normalizeUrl(sourceUrlEl.value);
+  const instruction = instructionEl.value.trim();
+
+  if (!attach && !notes && !url) return "";
 
   const sec = currentSection();
   const issue = issueEl.value.trim();
   const issueLine = issue ? `Issue month: **${issue}**.` : "Issue month: (not specified).";
-  const head = promptHeader(sec, issueLine);
+  const head = promptHeader(sec, issueLine, instruction);
 
-  if (attach && !notes) {
+  const commonRules = `Beautify and clarify for this section. Fix grammar / flow; keep meaning.
+Obey Instruction above when present (layout/tone/length) — do **not** treat Instruction as factual content.
+Do **not** add new facts, teachings, places, or names that are not in the SOURCE.
+If the SOURCE is thin, keep the output short rather than inventing filler.
+Return only the polished newsletter text (optional exact section heading), no preamble.`;
+
+  if (attach) {
+    const extraNotes = [
+      notes ? `EDITOR NOTES (optional — not new facts unless already in SOURCE)\n\`\`\`\n${notes}\n\`\`\`` : "",
+      url && !notes
+        ? `Optional: if helpful, you may also skim this public URL for context only (SOURCE remains the .txt):\n${url}`
+        : url
+          ? `Optional public URL for context only (SOURCE remains the .txt):\n${url}`
+          : ""
+    ].filter(Boolean).join("\n\n");
+
     return `${head}
 Task
 I will attach a plain-text **.txt** file in this chat as the SOURCE.
-Beautify and clarify **that file’s contents** for this section. Fix grammar / flow; keep meaning.
-Do **not** add new facts, teachings, places, or names that are not in the SOURCE file.
-If the SOURCE is thin, keep the output short rather than inventing filler.
+${commonRules}
 If the attachment is missing or unreadable, stop and ask for the .txt — do **not** invent source text.
-Return only the polished newsletter text (optional exact section heading), no preamble.
+${extraNotes ? `\n${extraNotes}\n` : ""}`;
+  }
+
+  if (url && !notes) {
+    return `${head}
+Task
+There is no pasted text and no .txt attachment. Open this **public URL** and use its readable content as the SOURCE:
+${url}
+
+Read the page (or raw text) carefully. Extract only what belongs in this newsletter section; ignore nav, ads, and unrelated chrome.
+${commonRules}
+If the URL cannot be opened or has no usable text, stop and say so — do **not** invent source text.
 `;
   }
 
-  if (attach && notes) {
+  if (url && notes) {
     return `${head}
 Task
-I will attach a plain-text **.txt** file in this chat as the SOURCE.
-Beautify and clarify **that file’s contents** for this section. Fix grammar / flow; keep meaning.
-Treat the EDITOR NOTES below as optional guidance only (tone, cut/keep hints) — not new facts unless they already appear in the SOURCE file.
-Do **not** add teachings, places, or names that are not in the SOURCE file.
-If the attachment is missing or unreadable, stop and ask for the .txt — do **not** invent source text.
-Return only the polished newsletter text (optional exact section heading), no preamble.
+Primary SOURCE is the pasted text below. Also open this **public URL** and merge only facts that already support or clarify that SOURCE (do not add unrelated page content):
+${url}
 
-EDITOR NOTES
+${commonRules}
+
+SOURCE
 \`\`\`
 ${notes}
 \`\`\`
@@ -295,10 +350,7 @@ ${notes}
 
   return `${head}
 Task
-Beautify and clarify the SOURCE below for this section. Fix grammar / flow; keep meaning.
-Do **not** add new facts, teachings, places, or names that are not in the SOURCE.
-If the SOURCE is thin, keep the output short rather than inventing filler.
-Return only the polished newsletter text (optional exact section heading), no preamble.
+${commonRules}
 
 SOURCE
 \`\`\`
@@ -309,9 +361,14 @@ ${notes}
 
 function refreshPrompt() {
   const attach = attachEl.checked;
-  sourceHint.textContent = attach
-    ? "(optional notes — SOURCE is the .txt you attach in ChatGPT)"
-    : "(required unless attaching .txt)";
+  const url = sourceUrlEl.value.trim();
+  if (attach) {
+    sourceHint.textContent = "(optional notes — SOURCE is the .txt in ChatGPT)";
+  } else if (url) {
+    sourceHint.textContent = "(optional if URL is set)";
+  } else {
+    sourceHint.textContent = "(or set a public URL / attach .txt)";
+  }
 
   const text = buildPrompt();
   promptOut.value = text;
@@ -321,11 +378,14 @@ function refreshPrompt() {
   openGptBtn.disabled = !ok;
 
   if (!ok) {
-    statusEl.textContent = "Paste rough text, or check “attach .txt in ChatGPT”.";
+    statusEl.textContent = "Paste text, set a public URL, or check attach .txt.";
     actionHint.textContent = "No API key — you run ChatGPT yourself.";
   } else if (attach) {
-    statusEl.textContent = "Prompt ready — copy it, open ChatGPT, then attach your .txt.";
+    statusEl.textContent = "Prompt ready — copy, open ChatGPT, then attach your .txt.";
     actionHint.textContent = "In ChatGPT: paste this prompt, then upload your .txt.";
+  } else if (url && !sourceEl.value.trim()) {
+    statusEl.textContent = "Prompt ready — ChatGPT should open the public URL as SOURCE.";
+    actionHint.textContent = "Paste the prompt in ChatGPT (browsing/URL access may be needed).";
   } else {
     statusEl.textContent = "Prompt ready — copy and paste into ChatGPT.";
     actionHint.textContent = "No API key — you run ChatGPT yourself.";
@@ -340,6 +400,8 @@ function save() {
       lang: langEl.value,
       form: formEl.value,
       attachTxt: attachEl.checked,
+      sourceUrl: sourceUrlEl.value,
+      instruction: instructionEl.value,
       source: sourceEl.value,
       result: resultEl.value
     }));
@@ -356,6 +418,8 @@ function load() {
     if (d.lang) langEl.value = d.lang;
     if (d.form) formEl.value = d.form;
     if (typeof d.attachTxt === "boolean") attachEl.checked = d.attachTxt;
+    if (d.sourceUrl) sourceUrlEl.value = d.sourceUrl;
+    if (d.instruction) instructionEl.value = d.instruction;
     if (d.source) sourceEl.value = d.source;
     if (d.result) resultEl.value = d.result;
   } catch (_) {}
@@ -378,6 +442,7 @@ function onChange() {
 
 document.getElementById("clearSrc").addEventListener("click", () => {
   sourceEl.value = "";
+  sourceUrlEl.value = "";
   onChange();
 });
 
@@ -400,9 +465,13 @@ downloadPromptBtn.addEventListener("click", () => {
 });
 openGptBtn.addEventListener("click", () => {
   window.open("https://chatgpt.com/", "_blank", "noopener,noreferrer");
-  statusEl.textContent = attachEl.checked
-    ? "ChatGPT opened — paste the prompt, then attach your .txt."
-    : "ChatGPT opened — paste the prompt (Ctrl+V).";
+  if (attachEl.checked) {
+    statusEl.textContent = "ChatGPT opened — paste the prompt, then attach your .txt.";
+  } else if (sourceUrlEl.value.trim() && !sourceEl.value.trim()) {
+    statusEl.textContent = "ChatGPT opened — paste the prompt; it should use the public URL.";
+  } else {
+    statusEl.textContent = "ChatGPT opened — paste the prompt (Ctrl+V).";
+  }
 });
 
 document.getElementById("copyResult").addEventListener("click", () =>
@@ -438,6 +507,8 @@ document.getElementById("clearResult").addEventListener("click", () => {
   langEl.addEventListener(ev, onChange);
   formEl.addEventListener(ev, onChange);
   attachEl.addEventListener(ev, onChange);
+  sourceUrlEl.addEventListener(ev, onChange);
+  instructionEl.addEventListener(ev, onChange);
   sourceEl.addEventListener(ev, onChange);
   resultEl.addEventListener(ev, save);
 });

@@ -227,14 +227,14 @@ export async function buildNewsletterExportZip(input: {
 - **Language:** Telugu (v1)
 - **Issue target:** soft PDF ready around the 1st of ${input.issueMonth} (IST)
 - **Asset coverage (date taken):** ${windowLabel}
-- **Design:** Follow \`00-LOOK-AND-FEEL.md\` for colours/fonts/section order (defaults).
-- **Facts only:** Label + Summary. Do not invent teachings.
+- **Design:** Follow \`00-LOOK-AND-FEEL.md\` for colours/fonts/section order **and PDF anti-patterns**.
+- **Facts only:** Label + Summary. Do not invent teachings. Skip placeholder Summaries (\`Add summary…\`).
 - **Layout priority:** section Instruction → photo Instruction → summary Instruction → Use as background → calm single-column if none.
 - See \`02-LAYOUT-DIRECTIVES.md\` (section: ${sectionInstructionCount}; photo Instruction: ${photoInstructionCount}; summary Instruction: ${summaryInstructionCount}; background: ${backgroundCount}).
 
 ## Suggested AI instruction
 
-Read \`02-LAYOUT-DIRECTIVES.md\` first. Obey section, photo, and summary-text directives. For background-flagged images, keep text primary over a washed soft background. Facts from Label/Summary only. Global Assets photos may be used under any heading where they fit.
+Read \`02-LAYOUT-DIRECTIVES.md\` first. Obey section, photo, and summary-text directives **silently** — never print \`[Layout applied: …]\` or \`[Image: …]\` in the PDF. For background-flagged images, keep text primary over a washed soft background. Facts from Label/Summary only. Global Assets = logo / compact founders strip, not a multi-page bio. Prefer a tight print-ready PDF with embedded Telugu fonts.
 `;
   zip.file("01-BRIEF.md", brief);
   zip.file("02-LAYOUT-DIRECTIVES.md", layoutDirectivesMarkdown(input.assets, sectionSettings));

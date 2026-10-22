@@ -2,11 +2,7 @@
 
 import { useMemo, useState } from "react";
 import { defaultCoverageRange } from "@/lib/newsletter/coverage";
-import {
-  firstNewsletterPdfPrompt,
-  followUpNewsletterPdfPrompt,
-  type NewsletterPdfLayout,
-} from "@/lib/newsletter/prompts";
+import { firstNewsletterPdfPrompt, followUpNewsletterPdfPrompt } from "@/lib/newsletter/prompts";
 
 type PromptKind = "first" | "followup";
 
@@ -18,7 +14,6 @@ export function NewsletterPreparePanel() {
   const [takenOnTo, setTakenOnTo] = useState(defaults.takenOnTo);
   const [issueMonth, setIssueMonth] = useState(defaults.issueMonth);
   const [allAssets, setAllAssets] = useState(false);
-  const [layout, setLayout] = useState<NewsletterPdfLayout>("tiles");
   const [promptKind, setPromptKind] = useState<PromptKind>("first");
   const [copied, setCopied] = useState(false);
   const [message, setMessage] = useState<string | null>(null);
@@ -28,10 +23,9 @@ export function NewsletterPreparePanel() {
       issueMonth,
       takenOnFrom: allAssets ? undefined : takenOnFrom,
       takenOnTo: allAssets ? undefined : takenOnTo,
-      layout,
     };
     return promptKind === "first" ? firstNewsletterPdfPrompt(args) : followUpNewsletterPdfPrompt(args);
-  }, [allAssets, issueMonth, layout, promptKind, takenOnFrom, takenOnTo]);
+  }, [allAssets, issueMonth, promptKind, takenOnFrom, takenOnTo]);
 
   function exportHref() {
     const params = new URLSearchParams();
@@ -61,8 +55,8 @@ export function NewsletterPreparePanel() {
         <div>
           <h2>Prepare PDF (ChatGPT)</h2>
           <p className="prepare-hint muted">
-            Long label = title + subtitle; Summary = topic content; Instruction = how it should look. Download the
-            zip, pick layout preference, copy the prompt, attach files in ChatGPT.
+            Layout comes from section and photo instructions. Download the zip, copy the prompt, attach files in
+            ChatGPT.
           </p>
         </div>
         <a className="uk-button uk-button-default uk-button-small" href={CHATGPT_URL} target="_blank" rel="noreferrer">
@@ -101,33 +95,6 @@ export function NewsletterPreparePanel() {
         </label>
       </div>
 
-      <div className="newsletter-layout-tabs" role="radiogroup" aria-label="PDF layout">
-        <span className="newsletter-layout-label">PDF layout</span>
-        <button
-          type="button"
-          role="radio"
-          aria-checked={layout === "tiles"}
-          className={layout === "tiles" ? "active" : undefined}
-          onClick={() => setLayout("tiles")}
-        >
-          Tiles (compact grid)
-        </button>
-        <button
-          type="button"
-          role="radio"
-          aria-checked={layout === "article"}
-          className={layout === "article" ? "active" : undefined}
-          onClick={() => setLayout("article")}
-        >
-          Article (reading flow)
-        </button>
-        <span className="muted newsletter-layout-hint">
-          {layout === "tiles"
-            ? "Prefer a soft grid when there is enough content; otherwise ChatGPT may use article flow."
-            : "One story after another with more breathing room."}
-        </span>
-      </div>
-
       <div className="newsletter-prepare-actions">
         <a
           className="uk-button uk-button-primary uk-button-small"
@@ -136,7 +103,7 @@ export function NewsletterPreparePanel() {
         >
           Download resources (.md + images)
         </a>
-        <span className="muted">Includes look-and-feel, brief, section markdown, and images.</span>
+        <span className="muted">Includes look-and-feel, brief, layout directives, section markdown, and images.</span>
       </div>
 
       <div className="newsletter-prompt-tabs" role="tablist" aria-label="Prompt type">
@@ -165,8 +132,8 @@ export function NewsletterPreparePanel() {
 
       <p className="muted newsletter-prompt-hint">
         {promptKind === "first"
-          ? "New ChatGPT chat: attach the zip (include 02-LAYOUT-DIRECTIVES.md), then paste this prompt. Instructions are mandatory."
-          : "Same ChatGPT project: attach this month’s sections + images + 02-LAYOUT-DIRECTIVES.md; obey every Instruction."}
+          ? "New ChatGPT chat: attach the zip (include 02-LAYOUT-DIRECTIVES.md), then paste this prompt."
+          : "Same ChatGPT project: attach this month’s sections + images + 02-LAYOUT-DIRECTIVES.md."}
       </p>
 
       <textarea className="uk-textarea newsletter-prompt-box" rows={12} readOnly value={prompt} />

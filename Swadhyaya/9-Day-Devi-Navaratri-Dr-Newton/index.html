@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Devi Navaratrula Jnanam · Jnanodayam</title>
+  <title>Devi Navaratrula Jnanam</title>
   <style>
     :root {
       --ink: #2a241f; --ink-muted: #56483a; --ink-soft: #8a6a4a;
@@ -26,6 +26,11 @@
     .site-header a { text-decoration: none; }
     .site-brand { display: block; font-size: 15px; font-weight: 700; letter-spacing: 0.04em; color: var(--heading); }
     .site-brand span { display: block; font-size: 12px; font-weight: 400; color: var(--ink-soft); margin-top: 2px; }
+    .hub-banner {
+      display: block; width: 100%; height: auto; margin: 0 0 14px;
+      border-radius: 16px; border: 1px solid rgba(126, 92, 53, 0.15);
+      box-shadow: 0 10px 28px rgba(85, 58, 31, 0.12);
+    }
     .hub-card {
       box-sizing: border-box; padding: 28px 24px 36px; border-radius: 20px;
       background: var(--card); box-shadow: 0 16px 40px rgba(85, 58, 31, 0.14);
@@ -35,14 +40,13 @@
     .lede { margin: 0 0 20px; color: var(--ink-muted); font-size: 15px; }
     .week-label { margin: 28px 0 10px; font-size: 14px; font-weight: 700; color: var(--accent); }
     .day-list { list-style: none; margin: 0; padding: 0; }
-    .day-list li { margin: 0 0 8px; }
-    .day-list a {
-      display: block; padding: 12px 14px; border-radius: 12px; text-decoration: none;
-      background: var(--qa); border: 1px solid rgba(186, 122, 58, 0.18); color: var(--ink);
+    .day-list li {
+      margin: 0 0 8px; padding: 12px 14px; border-radius: 12px;
+      background: var(--qa); border: 1px solid rgba(186, 122, 58, 0.18);
     }
-    .day-list a:hover { border-color: var(--accent); }
     .day-list strong { display: block; font-size: 14px; color: var(--heading); }
-    .day-list em { font-style: normal; font-size: 13px; color: var(--ink-muted); }
+    .day-list em { display: block; font-style: normal; font-size: 13px; color: var(--ink-muted); margin: 4px 0 8px; }
+    .day-langs a { margin-right: 10px; font-size: 13px; font-weight: 600; }
     .site-footer { margin-top: 22px; padding: 8px 4px; font-size: 12px; color: var(--ink-soft); text-align: center; }
   </style>
 </head>
@@ -50,28 +54,30 @@
   <div class="site-wrap">
     <header class="site-header">
       <a class="site-brand" href="index.html">
-        Jnanodayam
-        <span>Devi Navaratrula Jnanam</span>
+        Devi Navaratrula Jnanam
+        <span>Self Knowledge Reading</span>
       </a>
       <nav><a href="index.html">Programme</a></nav>
     </header>
     <div class="hub-card">
+      <img class="hub-banner" src="assets/devi-navaratrula-jnanam-banner.png" alt="జ్ఞానోదయం · Devi Navratrula Jnanam" width="1600" height="900" />
       <h1>Programme</h1>
-      <p class="lede">Exported from the Self Knowledge Reading library · Devi Navaratrula Jnanam.</p>
+      <p class="lede">Same content as the library reader · Devi Navaratrula Jnanam.</p>
       <p class="week-label">Days</p>
       <ul class="day-list">
-        <li id="day-01"><a href="day-01-en.html"><strong>Day 1</strong><em>Opening Meditation · Anapanasati and Sahasrara · Navaratri · Bathukamma and the Girl Child · Immersion · The Asura and the Hara Centre · …</em></a></li>
-        <li id="day-02"><a href="day-02-en.html"><strong>Day 2</strong><em>Opening Meditation · The Empty Vessel · Shakti and Chaitanya · Celebration, Not Enjoyment · Three Mothers · Meditation, Service, Knowledge · …</em></a></li>
-        <li id="day-03"><a href="day-03-en.html"><strong>Day 3</strong><em>Opening Meditation · Sahasrara Sankalpa · Sura and Asura · Svara and Apasvara · Three Gunas · The Crown in the Mind · …</em></a></li>
-        <li id="day-04"><a href="day-04-en.html"><strong>Day 4</strong><em>Opening Meditation · Breath, Crown, and Sankalpa · The Fourth Morning · Cause, Symbol, and a New Birth · Rambha and Karambha · Body and Endless Wanting · …</em></a></li>
-        <li id="day-05"><a href="day-05-en.html"><strong>Day 5</strong><em>Opening Meditation · Sahasrara Pyramid · Two Navaratris · Aham and Sarvam · Rambha and Karambha · Two Desires · …</em></a></li>
-        <li id="day-06"><a href="day-06-en.html"><strong>Day 6</strong><em>Opening Meditation · The Empty Vessel · Parashakti · Shiva Cannot Move Without Her · Mahishasura · The Summit of Meru · …</em></a></li>
-        <li id="day-07"><a href="day-07-en.html"><strong>Day 7</strong><em>Opening Meditation · Breath and Sahasrara · Saptami · The Sword of Knowledge · Sumbha and Nisumbha · Pleasure, Pain, and the Four · …</em></a></li>
-        <li id="day-08"><a href="day-08-en.html"><strong>Day 8</strong><em>Opening Meditation · Anapanasati · Devi Shakti · Respect for Nature · Anger · The Power of Words · …</em></a></li>
-        <li id="day-09"><a href="day-09-en.html"><strong>Day 9</strong><em>Opening Meditation · Anapanasati · Welcome · The Last Day of Navaratri · The First Principle · Shakti, Chaitanya, Knowledge · …</em></a></li>
+        <li id="day-01"><strong>Day 1</strong><em>Bathukamma · The Asura and the Hara Centre</em><span class="day-langs"><a href="day-01-en.html">English</a> · <a href="day-01-te.html">తెలుగు</a></span></li>
+        <li id="day-02"><strong>Day 2</strong><em>The Empty Vessel · Shakti and Chaitanya</em><span class="day-langs"><a href="day-02-en.html">English</a> · <a href="day-02-te.html">తెలుగు</a></span></li>
+        <li id="day-03"><strong>Day 3</strong><em>Sura and Asura · Svara and Apasvara</em><span class="day-langs"><a href="day-03-en.html">English</a> · <a href="day-03-te.html">తెలుగు</a></span></li>
+        <li id="day-04"><strong>Day 4</strong><em>Cause, Symbol, and a New Birth</em><span class="day-langs"><a href="day-04-en.html">English</a> · <a href="day-04-te.html">తెలుగు</a></span></li>
+        <li id="day-05"><strong>Day 5</strong><em>Two Navaratris · Aham and Sarvam</em><span class="day-langs"><a href="day-05-en.html">English</a> · <a href="day-05-te.html">తెలుగు</a></span></li>
+        <li id="day-06"><strong>Day 6</strong><em>Parashakti · Mahishasura Mardini</em><span class="day-langs"><a href="day-06-en.html">English</a> · <a href="day-06-te.html">తెలుగు</a></span></li>
+        <li id="day-07"><strong>Day 7</strong><em>The Sword of Knowledge · Sumbha and Nisumbha</em><span class="day-langs"><a href="day-07-en.html">English</a> · <a href="day-07-te.html">తెలుగు</a></span></li>
+        <li id="day-08"><strong>Day 8</strong><em>Devi Shakti · Nature and the Power of Words</em><span class="day-langs"><a href="day-08-en.html">English</a> · <a href="day-08-te.html">తెలుగు</a></span></li>
+        <li id="day-09"><strong>Day 9</strong><em>The First Principle · Shakti, Chaitanya, Knowledge</em><span class="day-langs"><a href="day-09-en.html">English</a> · <a href="day-09-te.html">తెలుగు</a></span></li>
+        <li id="day-10"><strong>Day 10</strong><em>Vijayadashami — Divine Shakti, Self-Knowledge, and Spiritual Practice</em><span class="day-langs"><a href="day-10-en.html">English</a> · <a href="day-10-te.html">తెలుగు</a></span></li>
       </ul>
     </div>
-    <footer class="site-footer">Jnanodayam · Devi Navaratrula Jnanam · Quantum Life University</footer>
+    <footer class="site-footer">Devi Navaratrula Jnanam · Quantum Life University</footer>
   </div>
 </body>
 </html>

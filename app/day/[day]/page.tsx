@@ -13,6 +13,5 @@ export default async function DayRedirect({ params, searchParams }: Props) {
     if (typeof value === "string") next.set(key, value);
   }
   if (!next.has("lang")) next.set("lang", "te");
-  const series = day === "8" || day === "7" ? "devi-navaratrula-jnanam" : "jnanodayam";
-  redirect(`/series/${series}/day/${day}?${next}`);
+  redirect(`/series/devi-navaratrula-jnanam/day/${day}?${next}`);
 }

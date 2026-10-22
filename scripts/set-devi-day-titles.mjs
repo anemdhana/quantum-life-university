@@ -48,6 +48,7 @@ const EN = {
   7: "The Sword of Knowledge · Sumbha and Nisumbha",
   8: "Devi Shakti · Nature and the Power of Words",
   9: "The First Principle · Shakti, Chaitanya, Knowledge",
+  10: "Vijayadashami — Divine Shakti, Self-Knowledge, and Spiritual Practice",
 };
 
 const TE = {
@@ -59,7 +60,8 @@ const TE = {
   6: "పరాశక్తి · మహిషాసుర మర్దిని",
   7: "జ్ఞాన ఖడ్గం · శుంభ నిశుంభులు",
   8: "దేవీ శక్తి · ప్రకృతి · మాటల ప్రభావం",
-  9: "మొదటి సూత్రం · శక్తి · చైతన్యం · జ్ఞానం",
+  9: "నవరాత్రుల తొమ్మిదవ రోజు — దేవీ శక్తి, జ్ఞానదృష్టి మరియు అంతర్యాత్ర",
+  10: "విజయదశమి — దేవీ శక్తి, ఆత్మజ్ఞానం మరియు సాధన",
 };
 
 const supabase = createClient(url, key, { auth: { persistSession: false } });

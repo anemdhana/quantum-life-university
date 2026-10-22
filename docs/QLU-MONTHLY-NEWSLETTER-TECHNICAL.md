@@ -205,7 +205,7 @@ QLU-newsletter-resources-{yyyy-MM}/   # or -all / -from-to
 - Coverage window (`takenOnFrom`–`takenOnTo`)
 - Target issue month / send date (1st)
 - Language: Telugu
-- Pointer: follow `00-LOOK-AND-FEEL.md` for headings, colours, fonts, sizes, **Article vs Tiles** layout
+- Pointer: follow `00-LOOK-AND-FEEL.md` for headings, colours, fonts; layout from section/photo Instructions
 - Suggested AI instruction paragraph (from requirements §8.6)
 
 #### Implementation sketch
@@ -214,8 +214,8 @@ QLU-newsletter-resources-{yyyy-MM}/   # or -all / -from-to
 |-------|--------|
 | Route | `GET /api/admin/newsletter/export?takenOnFrom=&takenOnTo=&issueMonth=&all=1` |
 | Builder | `lib/newsletter/exportPack.ts` + `jszip` |
-| Prompts | `lib/newsletter/prompts.ts` — first vs follow-up; `layout: article \| tiles` |
-| UI | `NewsletterPreparePanel` on `/admin/newsletter` (layout radio + prompt tabs) |
+| Prompts | `lib/newsletter/prompts.ts` — first vs follow-up |
+| UI | `NewsletterPreparePanel` on `/admin/newsletter` (prompt tabs) |
 | Auth | Admin session (`getSessionProfile`) |
 
 ---
@@ -296,13 +296,15 @@ Add check constraint migration when locking titles in the DB.
 
 ## 9. Roadmap (engineering)
 
-| Version | Work |
-|---------|------|
-| **v1** | Global table + create + list; title = closed section list |
-| **v1.1** | Edit / delete; filters; **export zip** (look-and-feel + section md + images) |
-| **v1.2** | Optional usage log; “Copy AI prompt” helper |
-| **v2** | REST export for external tools |
-| **v3** | Assisted in-app PDF compose (optional) |
+Canonical phased plan (Composer + AI pack): **[QLU-NEWSLETTER-COMPOSER.md](./QLU-NEWSLETTER-COMPOSER.md)**.
+
+| Version / phase | Work |
+|-----------------|------|
+| **v1 / Phase 0** | Global assets + instructions; export zip + ChatGPT prompts |
+| **Phase 1** | **Done:** `/admin/newsletter/composer` — templates, slots, localStorage draft, print PDF |
+| **Phase 2** | DB `newsletter_issues` / pages / slots; Playwright PDF + Telugu fonts |
+| **Phase 3** | Per-slot Telugu AI assist (no layout invention) |
+| **Phase 4** | Archive, send automation, richer templates |
 
 ---
 

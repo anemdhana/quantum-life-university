@@ -1,11 +1,13 @@
 "use client";
 
-import { useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import {
   createNewsletterAsset,
   deleteNewsletterAsset,
   updateNewsletterAsset,
+  upsertNewsletterSectionInstruction,
   type NewsletterAssetListItem,
+  type NewsletterSectionSettingsMap,
 } from "@/lib/actions/newsletter";
 import {
   DEFAULT_NEWSLETTER_SECTION_TITLE,
@@ -45,6 +47,8 @@ function AssetDetailModal({
     label: string;
     summary: string;
     instruction: string;
+    summaryInstruction: string;
+    useAsBackground: boolean;
     takenOn: string;
     imageFile: File | null;
   }) => Promise<void>;
@@ -54,6 +58,8 @@ function AssetDetailModal({
   const [label, setLabel] = useState(asset.label);
   const [summary, setSummary] = useState(asset.summary);
   const [instruction, setInstruction] = useState(asset.instruction);
+  const [summaryInstruction, setSummaryInstruction] = useState(asset.summaryInstruction);
+  const [useAsBackground, setUseAsBackground] = useState(asset.useAsBackground);
   const [takenOn, setTakenOn] = useState(asset.takenOn);
   const [imageFile, setImageFile] = useState<File | null>(null);
   const [previewUrl, setPreviewUrl] = useState(asset.imageUrl);
@@ -74,74 +80,108 @@ function AssetDetailModal({
           </button>
         </div>
 
-        <div className="newsletter-detail-preview">
-          <img src={previewUrl} alt="" />
-        </div>
+        <div className="newsletter-detail-grid">
+          <aside className="newsletter-detail-media">
+            <div className={`newsletter-detail-preview${useAsBackground ? " is-background" : ""}`}>
+              <img src={previewUrl} alt="" />
+            </div>
+            <label className="newsletter-field">
+              <span>Replace photo</span>
+              <input
+                type="file"
+                accept="image/jpeg,image/png,image/webp"
+                onChange={(event) => {
+                  const file = event.target.files?.[0] ?? null;
+                  setImageFile(file);
+                  if (file) setPreviewUrl(URL.createObjectURL(file));
+                }}
+              />
+            </label>
+            <label className="newsletter-field">
+              <span>Date taken</span>
+              <input className="uk-input" type="date" value={takenOn} onChange={(event) => setTakenOn(event.target.value)} />
+            </label>
+            <label className="newsletter-check">
+              <input
+                type="checkbox"
+                checked={useAsBackground}
+                onChange={(event) => setUseAsBackground(event.target.checked)}
+              />
+              <span>Use as background image</span>
+            </label>
+            <em className="muted newsletter-field-hint newsletter-check-hint">
+              Soft washed background so text stays primary.
+            </em>
+          </aside>
 
-        <label className="newsletter-field">
-          <span>Section</span>
-          <select className="uk-select" value={title} onChange={(event) => setTitle(event.target.value as NewsletterSectionTitle)}>
-            {NEWSLETTER_SECTION_TITLES.map((item) => (
-              <option key={item} value={item}>
-                {item}
-              </option>
-            ))}
-          </select>
-        </label>
+          <div className="newsletter-detail-fields">
+            <label className="newsletter-field">
+              <span>Section</span>
+              <select
+                className="uk-select"
+                value={title}
+                onChange={(event) => setTitle(event.target.value as NewsletterSectionTitle)}
+              >
+                {NEWSLETTER_SECTION_TITLES.map((item) => (
+                  <option key={item} value={item}>
+                    {item}
+                  </option>
+                ))}
+              </select>
+            </label>
 
-        <label className="newsletter-field">
-          <span>Long label</span>
-          <textarea
-            className="uk-textarea lang-te"
-            rows={3}
-            value={label}
-            onChange={(event) => setLabel(event.target.value)}
-            placeholder={"Header title on first line\nSubtitle on next line (or Title — Subtitle)"}
-          />
-          <em className="muted newsletter-field-hint">Printed as header title + subtitle in the PDF.</em>
-        </label>
+            <div className="newsletter-detail-text-grid">
+              <label className="newsletter-field">
+                <span>Long label</span>
+                <textarea
+                  className="uk-textarea lang-te"
+                  rows={4}
+                  value={label}
+                  onChange={(event) => setLabel(event.target.value)}
+                  placeholder={"Header title on first line\nSubtitle on next line (or Title — Subtitle)"}
+                />
+                <em className="muted newsletter-field-hint">Header title + subtitle in the PDF.</em>
+              </label>
 
-        <label className="newsletter-field">
-          <span>Summary</span>
-          <textarea
-            className="uk-textarea lang-te"
-            rows={3}
-            value={summary}
-            onChange={(event) => setSummary(event.target.value)}
-            placeholder="Topic content: what happened, why it matters under this section"
-          />
-          <em className="muted newsletter-field-hint">Used as the body text about this photo/topic.</em>
-        </label>
+              <label className="newsletter-field">
+                <span>Summary</span>
+                <textarea
+                  className="uk-textarea lang-te"
+                  rows={4}
+                  value={summary}
+                  onChange={(event) => setSummary(event.target.value)}
+                  placeholder="Topic content: what happened, why it matters under this section"
+                />
+                <em className="muted newsletter-field-hint">Body text about this photo/topic.</em>
+              </label>
+            </div>
 
-        <label className="newsletter-field">
-          <span>Instruction</span>
-          <textarea
-            className="uk-textarea"
-            rows={3}
-            value={instruction}
-            onChange={(event) => setInstruction(event.target.value)}
-            placeholder="Optional notes for ChatGPT: e.g. full-width hero, short pull-quote, pair with next photo, keep one short paragraph…"
-          />
-          <em className="muted newsletter-field-hint">How this item should look in the PDF — not extra facts.</em>
-        </label>
+            <div className="newsletter-detail-text-grid">
+              <label className="newsletter-field">
+                <span>Photo instruction</span>
+                <textarea
+                  className="uk-textarea"
+                  rows={3}
+                  value={instruction}
+                  onChange={(event) => setInstruction(event.target.value)}
+                  placeholder="Optional: full-width hero, left/right split, circular crop, pair with next photo…"
+                />
+                <em className="muted newsletter-field-hint">How the photo/layout should look — not extra facts.</em>
+              </label>
 
-        <div className="newsletter-detail-row">
-          <label className="newsletter-field">
-            <span>Date taken</span>
-            <input className="uk-input" type="date" value={takenOn} onChange={(event) => setTakenOn(event.target.value)} />
-          </label>
-          <label className="newsletter-field">
-            <span>Replace photo</span>
-            <input
-              type="file"
-              accept="image/jpeg,image/png,image/webp"
-              onChange={(event) => {
-                const file = event.target.files?.[0] ?? null;
-                setImageFile(file);
-                if (file) setPreviewUrl(URL.createObjectURL(file));
-              }}
-            />
-          </label>
+              <label className="newsletter-field">
+                <span>Summary instruction</span>
+                <textarea
+                  className="uk-textarea"
+                  rows={3}
+                  value={summaryInstruction}
+                  onChange={(event) => setSummaryInstruction(event.target.value)}
+                  placeholder="Optional: short bullets, pull-quote, 2–3 Telugu sentences, bold first line, keep poetic tone…"
+                />
+                <em className="muted newsletter-field-hint">How the Summary text should be presented — not new facts.</em>
+              </label>
+            </div>
+          </div>
         </div>
 
         {message ? <p className={/updated|saved/i.test(message) ? "muted" : "uk-text-danger"}>{message}</p> : null}
@@ -165,7 +205,18 @@ function AssetDetailModal({
             type="button"
             className="uk-button uk-button-primary uk-button-small"
             disabled={pending}
-            onClick={() => void onSave({ title, label, summary, instruction, takenOn, imageFile })}
+            onClick={() =>
+              void onSave({
+                title,
+                label,
+                summary,
+                instruction,
+                summaryInstruction,
+                useAsBackground,
+                takenOn,
+                imageFile,
+              })
+            }
           >
             {pending ? "Saving…" : "Save"}
           </button>
@@ -175,15 +226,31 @@ function AssetDetailModal({
   );
 }
 
-export function NewsletterAssetForm({ initialAssets }: { initialAssets: NewsletterAssetListItem[] }) {
+export function NewsletterAssetForm({
+  initialAssets,
+  initialSectionSettings,
+}: {
+  initialAssets: NewsletterAssetListItem[];
+  initialSectionSettings: NewsletterSectionSettingsMap;
+}) {
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [assets, setAssets] = useState(initialAssets);
+  const [sectionSettings, setSectionSettings] = useState(initialSectionSettings);
   const [section, setSection] = useState<NewsletterSectionTitle>(DEFAULT_NEWSLETTER_SECTION_TITLE);
+  const [sectionInstructionDraft, setSectionInstructionDraft] = useState(
+    initialSectionSettings[DEFAULT_NEWSLETTER_SECTION_TITLE] ?? "",
+  );
   const [query, setQuery] = useState("");
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [pending, setPending] = useState(false);
   const [uploadMessage, setUploadMessage] = useState<string | null>(null);
   const [detailMessage, setDetailMessage] = useState<string | null>(null);
+  const [sectionMessage, setSectionMessage] = useState<string | null>(null);
+
+  useEffect(() => {
+    setSectionInstructionDraft(sectionSettings[section] ?? "");
+    setSectionMessage(null);
+  }, [section, sectionSettings]);
 
   const counts = useMemo(() => {
     const map = new Map<NewsletterSectionTitle, number>();
@@ -197,7 +264,14 @@ export function NewsletterAssetForm({ initialAssets }: { initialAssets: Newslett
     const needle = query.trim().toLowerCase();
     if (!needle) return inSection;
     return inSection.filter((asset) => {
-      const haystack = [asset.title, asset.label, asset.summary, asset.instruction, asset.takenOn]
+      const haystack = [
+        asset.title,
+        asset.label,
+        asset.summary,
+        asset.instruction,
+        asset.summaryInstruction,
+        asset.takenOn,
+      ]
         .join("\n")
         .toLowerCase();
       return haystack.includes(needle);
@@ -205,6 +279,22 @@ export function NewsletterAssetForm({ initialAssets }: { initialAssets: Newslett
   }, [assets, section, query]);
 
   const selected = selectedId ? assets.find((asset) => asset.id === selectedId) ?? null : null;
+
+  async function saveSectionInstruction() {
+    setPending(true);
+    setSectionMessage(null);
+    const data = new FormData();
+    data.set("title", section);
+    data.set("instruction", sectionInstructionDraft);
+    const result = await upsertNewsletterSectionInstruction(data);
+    setPending(false);
+    if (!result.ok) {
+      setSectionMessage(result.error);
+      return;
+    }
+    setSectionSettings((current) => ({ ...current, [result.title]: result.instruction }));
+    setSectionMessage("Section instruction saved.");
+  }
 
   async function uploadFiles(files: FileList | File[]) {
     const list = Array.from(files).filter((file) => file.type.startsWith("image/"));
@@ -225,6 +315,8 @@ export function NewsletterAssetForm({ initialAssets }: { initialAssets: Newslett
       data.set("label", labelFromFilename(file.name));
       data.set("summary", "Add summary…");
       data.set("instruction", "");
+      data.set("summaryInstruction", "");
+      data.set("useAsBackground", "0");
       data.set("takenOn", takenOn);
       data.set("image", file);
       const result = await createNewsletterAsset(data);
@@ -250,6 +342,8 @@ export function NewsletterAssetForm({ initialAssets }: { initialAssets: Newslett
     label: string;
     summary: string;
     instruction: string;
+    summaryInstruction: string;
+    useAsBackground: boolean;
     takenOn: string;
     imageFile: File | null;
   }) {
@@ -262,6 +356,8 @@ export function NewsletterAssetForm({ initialAssets }: { initialAssets: Newslett
     data.set("label", input.label);
     data.set("summary", input.summary);
     data.set("instruction", input.instruction);
+    data.set("summaryInstruction", input.summaryInstruction);
+    data.set("useAsBackground", input.useAsBackground ? "1" : "0");
     data.set("takenOn", input.takenOn);
     if (input.imageFile) data.set("image", input.imageFile);
     const result = await updateNewsletterAsset(data);
@@ -300,6 +396,7 @@ export function NewsletterAssetForm({ initialAssets }: { initialAssets: Newslett
         <ul>
           {NEWSLETTER_SECTION_TITLES.map((title) => {
             const count = counts.get(title) ?? 0;
+            const hasSectionInstruction = Boolean((sectionSettings[title] ?? "").trim());
             return (
               <li key={title}>
                 <button
@@ -312,7 +409,10 @@ export function NewsletterAssetForm({ initialAssets }: { initialAssets: Newslett
                     setUploadMessage(null);
                   }}
                 >
-                  <strong>{NEWSLETTER_SECTION_NAV[title]}</strong>
+                  <strong>
+                    {NEWSLETTER_SECTION_NAV[title]}
+                    {hasSectionInstruction ? <abbr title="Has section instruction"> ·</abbr> : null}
+                  </strong>
                   <span>{count}</span>
                 </button>
               </li>
@@ -360,6 +460,38 @@ export function NewsletterAssetForm({ initialAssets }: { initialAssets: Newslett
           </div>
         </header>
 
+        <div className="newsletter-section-instruction">
+          <label className="newsletter-field">
+            <span>Section instruction</span>
+            <textarea
+              className="uk-textarea"
+              rows={4}
+              value={sectionInstructionDraft}
+              onChange={(event) => setSectionInstructionDraft(event.target.value)}
+              placeholder={
+                "How this whole section should look: e.g. 2-column grid, 3 tiles per row, soft #f6f1e8 band, background wash, content on the right…"
+              }
+            />
+            <em className="muted newsletter-field-hint">
+              Applies to the entire section (grids, placement, background colour/image). Photo instructions can override
+              one item.
+            </em>
+          </label>
+          <div className="newsletter-section-instruction-actions">
+            <button
+              type="button"
+              className="uk-button uk-button-default uk-button-small"
+              disabled={pending}
+              onClick={() => void saveSectionInstruction()}
+            >
+              {pending ? "Saving…" : "Save section instruction"}
+            </button>
+            {sectionMessage ? (
+              <span className={/saved/i.test(sectionMessage) ? "muted" : "uk-text-danger"}>{sectionMessage}</span>
+            ) : null}
+          </div>
+        </div>
+
         {sectionAssets.length === 0 ? (
           <p className="muted newsletter-empty">
             {query.trim()
@@ -371,15 +503,21 @@ export function NewsletterAssetForm({ initialAssets }: { initialAssets: Newslett
             {sectionAssets.map((asset) => (
               <li key={asset.id}>
                 <button type="button" className="newsletter-photo-row" onClick={() => setSelectedId(asset.id)}>
-                  <div className="newsletter-photo-media">
+                  <div className={`newsletter-photo-media${asset.useAsBackground ? " is-background" : ""}`}>
                     <img src={asset.imageUrl} alt="" />
                   </div>
                   <div className="newsletter-photo-copy">
                     <strong>{asset.title}</strong>
                     <p className="lang-te">{asset.label}</p>
                     <em className="lang-te">{asset.summary}</em>
+                    {asset.useAsBackground ? <span className="newsletter-bg-flag">Background image</span> : null}
                     {asset.instruction.trim() ? (
-                      <span className="newsletter-instruction-preview">Instruction: {asset.instruction.trim()}</span>
+                      <span className="newsletter-instruction-preview">Photo: {asset.instruction.trim()}</span>
+                    ) : null}
+                    {asset.summaryInstruction.trim() ? (
+                      <span className="newsletter-instruction-preview">
+                        Summary: {asset.summaryInstruction.trim()}
+                      </span>
                     ) : null}
                     <span>{asset.takenOn}</span>
                   </div>

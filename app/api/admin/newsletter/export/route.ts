@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { listNewsletterAssets } from "@/lib/actions/newsletter";
+import { listNewsletterAssets, listNewsletterSectionSettings } from "@/lib/actions/newsletter";
 import { getSessionProfile } from "@/lib/auth/profile";
 import { defaultCoverageRange } from "@/lib/newsletter/coverage";
 import { buildNewsletterExportZip } from "@/lib/newsletter/exportPack";
@@ -25,14 +25,18 @@ export async function GET(request: NextRequest) {
   const issueMonth =
     searchParams.get("issueMonth")?.match(/^\d{4}-\d{2}$/)?.[0] ?? defaults.issueMonth;
 
-  const assets = await listNewsletterAssets({
-    takenOnFrom: takenOnFrom ?? undefined,
-    takenOnTo: takenOnTo ?? undefined,
-    limit: 500,
-  });
+  const [assets, sectionSettings] = await Promise.all([
+    listNewsletterAssets({
+      takenOnFrom: takenOnFrom ?? undefined,
+      takenOnTo: takenOnTo ?? undefined,
+      limit: 500,
+    }),
+    listNewsletterSectionSettings(),
+  ]);
 
   const pack = await buildNewsletterExportZip({
     assets,
+    sectionSettings,
     takenOnFrom: takenOnFrom ?? undefined,
     takenOnTo: takenOnTo ?? undefined,
     issueMonth,

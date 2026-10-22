@@ -18,7 +18,7 @@ async function EditBody({ params, searchParams }: Props) {
   const language: Language = parseLanguage(query.lang);
   if (!Number.isInteger(dayNumber) || !Number.isInteger(sectionOrder)) notFound();
 
-  const series = query.series || "jnanodayam";
+  const series = query.series || "devi-navaratrula-jnanam";
   const [outline, active] = await Promise.all([
     loadDayOutline(series, dayNumber, language),
     loadSection(series, dayNumber, language, sectionOrder),

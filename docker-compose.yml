@@ -162,8 +162,13 @@ services:
       - ./supabase/migrations/20261021090000_newsletter_title_check.sql:/sql/07_newsletter_title_check.sql:ro
       - ./supabase/migrations/20261021093000_newsletter_global_assets_title.sql:/sql/08_newsletter_global_assets_title.sql:ro
       - ./supabase/migrations/20261021100000_newsletter_instruction.sql:/sql/09_newsletter_instruction.sql:ro
+      - ./supabase/migrations/20261022110000_newsletter_section_and_background.sql:/sql/10_newsletter_section_and_background.sql:ro
+      - ./supabase/migrations/20261022120000_newsletter_summary_instruction.sql:/sql/11_newsletter_summary_instruction.sql:ro
+      - ./supabase/seed-devi-en.sql:/sql/88_seed-devi-en.sql:ro
+      - ./supabase/seed-devi-te.sql:/sql/89_seed-devi-te.sql:ro
       - ./supabase/seed.sql:/sql/90_seed.sql:ro
       - ./supabase/seed-users.sql:/sql/91_seed-users.sql:ro
+      - ./supabase/migrations/20261022140000_drop_jnanodayam_series.sql:/sql/92_drop_jnanodayam.sql:ro
     entrypoint: ["sh", "-c"]
     command:
       - |
@@ -172,7 +177,7 @@ services:
         # Wait until GoTrue has migrated a modern auth schema.
         until psql -h db -U postgres -d postgres -tAc "select 1 from information_schema.columns where table_schema='auth' and table_name='refresh_tokens' and column_name='parent'" | grep -q 1; do sleep 2; done
         until psql -h db -U postgres -d postgres -c "select 1 from auth.users limit 0"; do sleep 2; done
-        for f in /sql/0*.sql /sql/9*.sql; do
+        for f in /sql/*.sql; do
           echo "Applying $$f"
           psql -h db -U postgres -d postgres -v ON_ERROR_STOP=1 -f "$$f"
         done

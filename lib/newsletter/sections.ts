@@ -15,6 +15,11 @@ export type NewsletterSectionTitle = (typeof NEWSLETTER_SECTION_TITLES)[number];
 /** Default title for new assets — reusable across any newsletter body section. */
 export const DEFAULT_NEWSLETTER_SECTION_TITLE: NewsletterSectionTitle = "Global Assets";
 
+/** Printed body headings (excludes Global Assets inventory). */
+export const NEWSLETTER_BODY_SECTION_TITLES = NEWSLETTER_SECTION_TITLES.filter(
+  (title) => title !== "Global Assets",
+);
+
 /** Short labels for the admin left nav. */
 export const NEWSLETTER_SECTION_NAV: Record<NewsletterSectionTitle, string> = {
   "Global Assets": "Global Assets",

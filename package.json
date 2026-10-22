@@ -8,6 +8,9 @@
     "start": "next start",
     "lint": "eslint",
     "content": "node scripts/extract-reader-html.mjs",
+    "content:te": "node scripts/extract-te-readers.mjs",
+    "content:dump": "node scripts/dump-library-seed.mjs",
+    "content:html": "python scripts/export_series_html.py --all",
     "day7": "node scripts/build-day7.mjs"
   },
   "dependencies": {

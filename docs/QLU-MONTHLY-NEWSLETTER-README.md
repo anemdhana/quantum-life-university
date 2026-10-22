@@ -1,8 +1,11 @@
 # QLU Monthly Newsletter
 
-Telugu-first soft PDF, published on the **1st of each month**. Editors bank photos with **header title/subtitle (Label)** and **topic content (Summary)** in a **global admin library**, then near month-end **download Markdown + images** and hand that pack to any AI (ChatGPT, Grok, …) with the look-and-feel brief — choosing **Tiles** (compact grid) or **Article** layout — to produce the PDF.
+Telugu-first soft PDF, published on the **1st of each month**. Editors bank photos in a **global admin library**, then either:
 
-No server-side PDF render in v1 — the export pack is the source of truth for drafting.
+1. **Composer (preferred going forward)** — Admin → **Composer**: pick A4 layouts, place photos/text, Print / Save PDF (ChatGPT optional), or  
+2. **AI pack (fallback)** — download Markdown + images and hand that pack to ChatGPT / Grok with the look-and-feel brief.
+
+Phased plan (0→4): **[Composer roadmap](./QLU-NEWSLETTER-COMPOSER.md)**.
 
 ---
 
@@ -10,6 +13,7 @@ No server-side PDF render in v1 — the export pack is the source of truth for d
 
 | Doc | Audience | What it covers |
 |-----|----------|----------------|
+| **[Composer roadmap](./QLU-NEWSLETTER-COMPOSER.md)** | Product + engineering | Phases 0–4: library → Composer → DB/PDF → light AI → distribution |
 | **[Requirements](./QLU-MONTHLY-NEWSLETTER-REQUIREMENTS.md)** | Product / editorial | Purpose, cadence, fixed sections, asset fields, export workflow, consent, acceptance |
 | **[Technical](./QLU-MONTHLY-NEWSLETTER-TECHNICAL.md)** | Engineering | `newsletter_assets` schema, storage, admin UI, zip layout, roadmap |
 | **[API](./QLU-MONTHLY-NEWSLETTER-API.md)** | Engineering | Server actions, types, export contract, proposed REST |
@@ -21,23 +25,22 @@ No server-side PDF render in v1 — the export pack is the source of truth for d
 
 ```
 All month          Admin → Newsletter
-                   upload photo + section title + label + summary + date taken
+                   upload photo + section title + label + summary (+ instructions)
                         ↓
-Near month-end     Admin → Newsletter → Prepare PDF
-                   Download zip + Copy prompt → ChatGPT
-                        ↓
-                   First chat: full prompt + whole zip
-                   Later months: short prompt + sections/images only
+Near month-end     Path A (Composer)          Path B (AI pack, optional)
+                   Admin → Composer            Prepare PDF → zip + prompt
+                   layouts + place assets     → ChatGPT / Grok
+                   → Print / Save PDF
                         ↓
 1st of next month  QLU-Newsletter-YYYY-MM-te.pdf → email / WhatsApp
 ```
 
-### Admin (v1)
+### Admin
 
-- Route: `/admin/newsletter`
-- Assets are **global** (not tied to one issue). Section left nav + searchable photo rows.
-- **Title** is a closed list: **Global Assets** (default, usable in any section) plus the seven body sections.
-- **Prepare PDF**: download resource zip; copy **First PDF** or **Next month** ChatGPT prompt.
+- **Assets:** `/admin/newsletter` — global library; section left nav; searchable photo rows.  
+- **Composer:** `/admin/newsletter/composer` — A4 templates, slots, local draft per issue month, browser PDF.  
+- **Title** is a closed list: **Global Assets** (default) plus the seven body sections.  
+- **Prepare PDF** (on assets page): zip + **First PDF** / **Next month** ChatGPT prompts (fallback).
 
 ### Export pack (for AI)
 
@@ -84,13 +87,13 @@ Full rules: **[Look & feel](./QLU-NEWSLETTER-LOOK-AND-FEEL.md)**.
 
 ---
 
-## Status (v1)
+## Status
 
-| Done / specified | Later |
-|------------------|--------|
-| Global asset create / update / delete (admin gallery) | Email / WhatsApp automation |
-| Export zip + first / follow-up ChatGPT prompts | Server-side PDF render |
-| Section-title allow-list + Global Assets | Public archive |
-| Docs for export + look-and-feel | |
+| Done | Later (see [Composer roadmap](./QLU-NEWSLETTER-COMPOSER.md)) |
+|------|--------|
+| Global asset library + instructions + background flag | Phase 2: DB issues + Playwright PDF |
+| Export zip + ChatGPT prompts (fallback) | Phase 3: per-slot Telugu AI assist |
+| **Composer Phase 1** — templates, place assets, print PDF | Phase 4: archive / send automation |
+| Docs: look-and-feel + composer phases | |
 
 App entry: `quantum-life-university` (Self Knowledge Reading). See repo root [README](../README.md) for local run.

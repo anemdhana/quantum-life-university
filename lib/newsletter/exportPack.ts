@@ -1,11 +1,15 @@
 import { readFile } from "node:fs/promises";
 import path from "node:path";
 import JSZip from "jszip";
-import type { NewsletterAssetListItem } from "@/lib/actions/newsletter";
-import { NEWSLETTER_SECTION_TITLES, newsletterSectionSlug, type NewsletterSectionTitle } from "@/lib/newsletter/sections";
+import type { NewsletterAssetListItem, NewsletterSectionSettingsMap } from "@/lib/actions/newsletter";
+import {
+  NEWSLETTER_BODY_SECTION_TITLES,
+  NEWSLETTER_SECTION_TITLES,
+  newsletterSectionSlug,
+  type NewsletterSectionTitle,
+} from "@/lib/newsletter/sections";
 
-/** Body headings for the PDF (Global Assets is inventory-only, still exported as a section file). */
-export const NEWSLETTER_BODY_SECTION_TITLES = NEWSLETTER_SECTION_TITLES.filter((title) => title !== "Global Assets");
+export { NEWSLETTER_BODY_SECTION_TITLES };
 
 function pad2(n: number) {
   return String(n).padStart(2, "0");
@@ -45,8 +49,36 @@ async function readPublicAsset(imageUrl: string): Promise<Buffer | null> {
   }
 }
 
-function sectionMarkdown(title: NewsletterSectionTitle, assets: NewsletterAssetListItem[]) {
+const BACKGROUND_DIRECTIVE =
+  "Use this image as a soft **background** behind the item (or its page/section band): reduce opacity / wash it (~20–35% visual strength) so Telugu title, subtitle, and Summary stay clearly readable and take visual priority. Do not place it as a solid opaque foreground photo tile unless a photo Instruction explicitly says otherwise.";
+
+function appendBlockquote(lines: string[], title: string, body: string) {
+  lines.push(`> **${title}**`);
+  lines.push(">");
+  for (const line of body.split(/\r?\n/)) {
+    lines.push(`> ${line}`);
+  }
+  lines.push("");
+}
+
+function sectionMarkdown(
+  title: NewsletterSectionTitle,
+  assets: NewsletterAssetListItem[],
+  sectionInstruction: string,
+) {
   const lines = [`# ${title}`, ""];
+  const sectionDir = sectionInstruction.trim();
+  if (sectionDir) {
+    appendBlockquote(
+      lines,
+      "MUST FOLLOW — SECTION LAYOUT INSTRUCTION (applies to this whole section)",
+      sectionDir,
+    );
+  } else {
+      lines.push("_No section layout instruction — use calm single-column reading flow, then per-item rules._");
+    lines.push("");
+  }
+
   if (assets.length === 0) {
     lines.push("_No items in this export window._", "");
     return lines.join("\n");
@@ -55,23 +87,35 @@ function sectionMarkdown(title: NewsletterSectionTitle, assets: NewsletterAssetL
     const imageName = safeImageName(asset.imageUrl, asset.id);
     const { headerTitle, subtitle } = splitNewsletterLabel(asset.label);
     const instruction = asset.instruction.trim();
+    const summaryInstruction = asset.summaryInstruction.trim();
     lines.push(`## Item: ${asset.takenOn} · ${index + 1}`);
     lines.push("");
     if (instruction) {
-      lines.push("> **MUST FOLLOW — LAYOUT INSTRUCTION (overrides Article/Tiles defaults for this item only)**");
-      lines.push(">");
-      for (const line of instruction.split(/\r?\n/)) {
-        lines.push(`> ${line}`);
-      }
-      lines.push("");
-    } else {
-      lines.push("_No layout instruction — use the issue layout preference (Article/Tiles)._");
+      appendBlockquote(
+        lines,
+        "MUST FOLLOW — PHOTO LAYOUT INSTRUCTION (overrides section defaults for this item)",
+        instruction,
+      );
+    }
+    if (summaryInstruction) {
+      appendBlockquote(
+        lines,
+        "MUST FOLLOW — SUMMARY TEXT INSTRUCTION (how to present Summary — not new facts)",
+        summaryInstruction,
+      );
+    }
+    if (asset.useAsBackground) {
+      appendBlockquote(lines, "MUST FOLLOW — USE AS BACKGROUND IMAGE", BACKGROUND_DIRECTIVE);
+    }
+    if (!instruction && !summaryInstruction && !asset.useAsBackground) {
+      lines.push("_No photo/summary instructions — follow section instruction or calm single-column default._");
       lines.push("");
     }
     lines.push(`- **Date taken:** ${asset.takenOn}`);
     lines.push(`- **Header title:** ${headerTitle || "_(from Label)_"}`);
     lines.push(`- **Subtitle:** ${subtitle || "_(optional — further Label lines)_"}`);
     lines.push(`- **Topic content (Summary):** ${asset.summary}`);
+    lines.push(`- **Use as background image:** ${asset.useAsBackground ? "yes" : "no"}`);
     lines.push(`- **Label (raw):** ${asset.label.replace(/\n/g, " / ")}`);
     lines.push(`- **Image:** ../images/${imageName}`);
     lines.push("");
@@ -79,31 +123,75 @@ function sectionMarkdown(title: NewsletterSectionTitle, assets: NewsletterAssetL
   return lines.join("\n");
 }
 
-function layoutDirectivesMarkdown(assets: NewsletterAssetListItem[]) {
-  const withInstructions = assets.filter((asset) => asset.instruction.trim());
+function layoutDirectivesMarkdown(
+  assets: NewsletterAssetListItem[],
+  sectionSettings: NewsletterSectionSettingsMap,
+) {
   const lines = [
-    "# Layout directives (from Admin → Instruction)",
+    "# Layout directives (from Admin)",
     "",
-    "These are **mandatory presentation rules**. They override Article/Tiles defaults and default image framing for the named item only. Do not invent facts from them.",
+    "Priority (highest first): **section Instruction** → **photo Instruction** → **summary Instruction** → **Use as background** → calm single-column if none → look-and-feel colours/fonts.",
+    "",
+    "These are **mandatory presentation rules**. Do not invent facts from them. Summary Instruction only controls how Summary text is written/placed (length, bullets, tone) — not new content.",
+    "",
+    "## A. Section directives",
     "",
   ];
+
+  let sectionCount = 0;
+  for (const title of NEWSLETTER_SECTION_TITLES) {
+    const text = (sectionSettings[title] ?? "").trim();
+    if (!text) continue;
+    sectionCount += 1;
+    lines.push(`### Section: ${title}`);
+    lines.push("");
+    lines.push("```");
+    lines.push(text);
+    lines.push("```");
+    lines.push("");
+  }
+  if (sectionCount === 0) {
+    lines.push("_No section instructions in this export._", "");
+  }
+
+  lines.push("## B. Photo / summary directives", "");
+  const withInstructions = assets.filter(
+    (asset) => asset.instruction.trim() || asset.summaryInstruction.trim() || asset.useAsBackground,
+  );
   if (withInstructions.length === 0) {
-    lines.push("_No per-item instructions in this export._", "");
+    lines.push("_No per-photo instructions, summary instructions, or background flags in this export._", "");
     return lines.join("\n");
   }
+
   for (const [index, asset] of withInstructions.entries()) {
     const imageName = safeImageName(asset.imageUrl, asset.id);
     const { headerTitle } = splitNewsletterLabel(asset.label);
-    lines.push(`## Directive ${index + 1}: ${asset.title}`);
+    lines.push(`### Photo ${index + 1}: ${asset.title}`);
     lines.push("");
     lines.push(`- **Item:** ${headerTitle || asset.label.split(/\r?\n/)[0] || asset.id}`);
     lines.push(`- **Date taken:** ${asset.takenOn}`);
     lines.push(`- **Image:** images/${imageName}`);
-    lines.push(`- **MUST DO:**`);
-    lines.push("");
-    lines.push("```");
-    lines.push(asset.instruction.trim());
-    lines.push("```");
+    lines.push(`- **Use as background image:** ${asset.useAsBackground ? "yes" : "no"}`);
+    if (asset.useAsBackground) {
+      lines.push("");
+      lines.push(`**Background rule:** ${BACKGROUND_DIRECTIVE}`);
+    }
+    if (asset.instruction.trim()) {
+      lines.push("");
+      lines.push("**MUST DO (photo Instruction):**");
+      lines.push("");
+      lines.push("```");
+      lines.push(asset.instruction.trim());
+      lines.push("```");
+    }
+    if (asset.summaryInstruction.trim()) {
+      lines.push("");
+      lines.push("**MUST DO (summary Instruction — text presentation only):**");
+      lines.push("");
+      lines.push("```");
+      lines.push(asset.summaryInstruction.trim());
+      lines.push("```");
+    }
     lines.push("");
   }
   return lines.join("\n");
@@ -111,12 +199,14 @@ function layoutDirectivesMarkdown(assets: NewsletterAssetListItem[]) {
 
 export async function buildNewsletterExportZip(input: {
   assets: NewsletterAssetListItem[];
+  sectionSettings?: NewsletterSectionSettingsMap;
   takenOnFrom?: string;
   takenOnTo?: string;
   issueMonth: string;
   allAssets: boolean;
 }): Promise<{ filename: string; bytes: Uint8Array }> {
   const zip = new JSZip();
+  const sectionSettings = input.sectionSettings ?? {};
   const lookAndFeelPath = path.join(process.cwd(), "docs", "QLU-NEWSLETTER-LOOK-AND-FEEL.md");
   const lookAndFeel = await readFile(lookAndFeelPath, "utf8");
   zip.file("00-LOOK-AND-FEEL.md", lookAndFeel);
@@ -125,23 +215,29 @@ export async function buildNewsletterExportZip(input: {
     ? "all global assets"
     : `${input.takenOnFrom ?? "…"} → ${input.takenOnTo ?? "…"}`;
 
+  const sectionInstructionCount = NEWSLETTER_SECTION_TITLES.filter((title) =>
+    (sectionSettings[title] ?? "").trim(),
+  ).length;
+  const photoInstructionCount = input.assets.filter((asset) => asset.instruction.trim()).length;
+  const summaryInstructionCount = input.assets.filter((asset) => asset.summaryInstruction.trim()).length;
+  const backgroundCount = input.assets.filter((asset) => asset.useAsBackground).length;
+
   const brief = `# QLU Newsletter brief — issue ${input.issueMonth}
 
 - **Language:** Telugu (v1)
 - **Issue target:** soft PDF ready around the 1st of ${input.issueMonth} (IST)
 - **Asset coverage (date taken):** ${windowLabel}
-- **Design:** Follow \`00-LOOK-AND-FEEL.md\` exactly (colours, fonts, heading order, layout modes, budgets).
-- **Facts only:** Use \`sections/*.md\` and \`images/\`. Do not invent teachings.
-- **Field mapping:** Label → header title + subtitle; Summary → topic body; **Instruction → mandatory layout for that item** (see \`02-LAYOUT-DIRECTIVES.md\`).
-- **Tiles:** prefer when a section has enough items/text; if content is thin, use article flow — **unless** an Instruction says otherwise.
-- **Priority:** per-item Instruction > issue layout preference > look-and-feel defaults.
+- **Design:** Follow \`00-LOOK-AND-FEEL.md\` for colours/fonts/section order (defaults).
+- **Facts only:** Label + Summary. Do not invent teachings.
+- **Layout priority:** section Instruction → photo Instruction → summary Instruction → Use as background → calm single-column if none.
+- See \`02-LAYOUT-DIRECTIVES.md\` (section: ${sectionInstructionCount}; photo Instruction: ${photoInstructionCount}; summary Instruction: ${summaryInstructionCount}; background: ${backgroundCount}).
 
 ## Suggested AI instruction
 
-Read \`02-LAYOUT-DIRECTIVES.md\` first and obey every directive. Then use \`00-LOOK-AND-FEEL.md\` for colours/fonts/section order. Facts only from Label/Summary. For each item: Header title + Subtitle from Label; topic prose from Summary; layout from Instruction when present. Global Assets photos may be used under any heading where they fit.
+Read \`02-LAYOUT-DIRECTIVES.md\` first. Obey section, photo, and summary-text directives. For background-flagged images, keep text primary over a washed soft background. Facts from Label/Summary only. Global Assets photos may be used under any heading where they fit.
 `;
   zip.file("01-BRIEF.md", brief);
-  zip.file("02-LAYOUT-DIRECTIVES.md", layoutDirectivesMarkdown(input.assets));
+  zip.file("02-LAYOUT-DIRECTIVES.md", layoutDirectivesMarkdown(input.assets, sectionSettings));
 
   const byTitle = new Map<NewsletterSectionTitle, NewsletterAssetListItem[]>();
   for (const title of NEWSLETTER_SECTION_TITLES) byTitle.set(title, []);
@@ -158,7 +254,10 @@ Read \`02-LAYOUT-DIRECTIVES.md\` first and obey every directive. Then use \`00-L
   for (const [index, title] of NEWSLETTER_SECTION_TITLES.entries()) {
     const list = byTitle.get(title) ?? [];
     const slug = newsletterSectionSlug(title);
-    sectionsFolder?.file(`${pad2(index + 1)}-${slug}.md`, sectionMarkdown(title, list));
+    sectionsFolder?.file(
+      `${pad2(index + 1)}-${slug}.md`,
+      sectionMarkdown(title, list, sectionSettings[title] ?? ""),
+    );
 
     for (const asset of list) {
       let name = safeImageName(asset.imageUrl, asset.id);
@@ -174,18 +273,20 @@ Read \`02-LAYOUT-DIRECTIVES.md\` first and obey every directive. Then use \`00-L
     }
   }
 
-  const instructionCount = input.assets.filter((asset) => asset.instruction.trim()).length;
   const manifest = `# MANIFEST
 
 - Exported at: ${new Date().toISOString()}
 - Issue month: ${input.issueMonth}
 - Date filter: ${windowLabel}
 - Asset rows: ${input.assets.length}
-- Items with layout Instruction: ${instructionCount}
+- Sections with Instruction: ${sectionInstructionCount}
+- Items with photo Instruction: ${photoInstructionCount}
+- Items with summary Instruction: ${summaryInstructionCount}
+- Items flagged Use as background: ${backgroundCount}
 - Images packed: ${imageCount}
 - Missing image files: ${missingImages}
 - Sections: ${NEWSLETTER_SECTION_TITLES.length} (includes Global Assets inventory)
-- Layout directives file: \`02-LAYOUT-DIRECTIVES.md\` (mandatory when Instruction count > 0)
+- Layout directives file: \`02-LAYOUT-DIRECTIVES.md\`
 `;
   zip.file("MANIFEST.md", manifest);
 

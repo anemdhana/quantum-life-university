@@ -10,6 +10,8 @@ Prompts (with defaults):
 
 Usage (from repo root):
   python scripts/export_series_html.py
+  python scripts/export_series_html.py --all
+  python scripts/export_series_html.py --series "Devi Navaratrula Jnanam" --lang all --out Swadhyaya/9-Day-Devi-Navaratri-Dr-Newton
 
 Requires: Kong/API up (NEXT_PUBLIC_SUPABASE_URL) and ANON_KEY or SERVICE_ROLE_KEY in .env.
 Optional: pip install psycopg[binary]  — then POSTGRES_PASSWORD can be used as a fallback.
@@ -17,6 +19,8 @@ Optional: pip install psycopg[binary]  — then POSTGRES_PASSWORD can be used as
 
 from __future__ import annotations
 
+import argparse
+import html as html_lib
 import json
 import os
 import sys
@@ -30,7 +34,7 @@ DEFAULT_SERIES = "Devi Navaratrula Jnanam"
 DEFAULT_OUT = ROOT / "Swadhyaya" / "9-Day-Devi-Navaratri-Dr-Newton"
 
 READER_CSS = r"""
-:root{--paper:#fffdf8;--ink:#352d26;--gold:#a17b43;--line:#e8dfd0}*{box-sizing:border-box}html,body{margin:0;height:100%;overflow:hidden}body{background:var(--paper);color:var(--ink);font-family:'Source Sans 3',sans-serif}.app{display:grid;grid-template-columns:220px minmax(0,1fr);height:100dvh}.side{background:#f6f1e8;border-right:1px solid var(--line);overflow-y:auto;padding:15px 8px}.brand{display:block;font:600 10px system-ui;letter-spacing:.12em;color:var(--gold);padding:5px 9px;text-decoration:none}.day-jump{display:flex;flex-wrap:wrap;gap:4px;margin:8px 6px 4px}.day-jump a{display:inline-flex;align-items:center;justify-content:center;font:600 10px system-ui;color:#6b4a25;text-decoration:none;border:1px solid #dbcbb6;background:#fffdf8;border-radius:5px;padding:0 6px;min-height:22px;line-height:20px}.day-jump a:hover{background:#e9dcc5}.side h2{font:600 19px 'Libre Baskerville',serif;margin:4px 9px 2px}.sub{font-size:11px;color:#7c6e5d;margin:0 9px 13px}.nav{padding:0;margin:0;list-style:none}.nav button{width:100%;text-align:left;border:0;background:transparent;color:#514538;display:flex;gap:8px;align-items:flex-start;padding:8px 9px;border-radius:6px;font:400 12px/1.5 'Noto Sans Telugu',sans-serif;cursor:pointer}.nav button:hover,.nav button.active{background:#e9dcc5;color:#5e421f}.nav button.active{font-weight:700;box-shadow:inset 3px 0 0 var(--gold)}.nav button.active .n{font-weight:800}.nav button.active small{font-weight:600}.nav .n{font:600 10px system-ui;color:var(--gold);padding-top:3px}.nav small{display:block;color:#877965;font:10px system-ui;margin-top:3px}.main{display:flex;flex-direction:column;min-width:0;min-height:0}.bar{min-height:48px;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px;border-bottom:1px solid var(--line);padding:4px 10px;background:#faf6ef}.bar-title{font:600 13px 'Libre Baskerville',serif;overflow:hidden;white-space:nowrap;text-overflow:ellipsis}.tools{display:flex;align-items:center;gap:5px;flex-shrink:0}.uk-button.uk-button-small{font:11px system-ui;text-transform:none;border-radius:5px;padding:0 9px;min-height:29px;line-height:27px}.read-time{color:#786b59;font:11px system-ui;white-space:nowrap}.reader{flex:1;min-height:0;display:flex;flex-direction:column}.spread{flex:1;min-height:0;position:relative;overflow:hidden;padding:16px 24px 14px}.columns{height:100%;width:100%;overflow:hidden;column-count:2;column-gap:36px;padding:0;column-fill:auto;scroll-behavior:smooth}.columns-inner{height:100%;width:100%}.columns p{font:400 14px/1.73 'Noto Sans Telugu',sans-serif;margin:0 0 8px;text-align:left;overflow-wrap:anywhere;break-inside:avoid-column}.columns .section-title{font:600 18px/1.6 'Libre Baskerville',serif;color:#6b4a25;margin:0 0 9px;break-after:avoid-column}.columns .intro{font:11px system-ui;color:var(--gold);margin:0 0 8px}.spread:after{content:'';position:absolute;top:16px;bottom:14px;left:50%;width:1px;background:var(--line);pointer-events:none}.bottom{height:43px;border-top:1px solid var(--line);display:flex;align-items:center;justify-content:space-between;padding:0 10px;background:#faf6ef;font:11px system-ui;color:#6f6252}.bottom button{border:1px solid #dbcbb6;background:#fffdf8;border-radius:5px;padding:5px 11px;color:#654c2f;cursor:pointer}.bottom button:disabled{opacity:.35;cursor:default}.mobile{display:none}.mobile-side{display:none}.mobile-side.open{display:block;position:fixed;z-index:50;top:48px;left:0;bottom:0;width:230px;overflow:auto;background:#f6f1e8;box-shadow:3px 0 20px #0002;padding:10px}.font-large .columns p{font-size:16px;line-height:1.8}.font-large .columns .section-title{font-size:20px}@media(max-width:800px){.app{grid-template-columns:1fr}.side{display:none}.mobile{display:inline-block}.columns{column-count:1}.spread:after{display:none}.columns p{font-size:14px}.bar-title{max-width:100%}}@media(min-width:801px) and (max-width:1100px){.columns p{font-size:13px;line-height:1.65}}
+:root{--paper:#fffdf8;--ink:#352d26;--gold:#a17b43;--line:#e8dfd0}*{box-sizing:border-box}html,body{margin:0;height:100%;overflow:hidden}body{background:var(--paper);color:var(--ink);font-family:'Source Sans 3',sans-serif}.app{display:grid;grid-template-columns:220px minmax(0,1fr);height:100dvh}.side{background:#f6f1e8;border-right:1px solid var(--line);overflow-y:auto;padding:15px 8px}.brand{display:block;font:600 10px system-ui;letter-spacing:.12em;color:var(--gold);padding:5px 9px;text-decoration:none}.day-jump{display:flex;flex-wrap:wrap;gap:4px;margin:8px 6px 4px}.day-jump a{display:inline-flex;align-items:center;justify-content:center;font:600 10px system-ui;color:#6b4a25;text-decoration:none;border:1px solid #dbcbb6;background:#fffdf8;border-radius:5px;padding:0 6px;min-height:22px;line-height:20px}.day-jump a:hover{background:#e9dcc5}.side h2{font:600 19px 'Libre Baskerville',serif;margin:4px 9px 2px}.sub{font-size:11px;color:#7c6e5d;margin:0 9px 13px}.nav{padding:0;margin:0;list-style:none}.nav button{width:100%;text-align:left;border:0;background:transparent;color:#514538;display:flex;gap:8px;align-items:flex-start;padding:8px 9px;border-radius:6px;font:400 12px/1.5 'Noto Sans Telugu',sans-serif;cursor:pointer}.nav button:hover,.nav button.active{background:#e9dcc5;color:#5e421f}.nav button.active{font-weight:700;box-shadow:inset 3px 0 0 var(--gold)}.nav button.active .n{font-weight:800}.nav button.active small{font-weight:600}.nav .n{font:600 10px system-ui;color:var(--gold);padding-top:3px}.nav small{display:block;color:#877965;font:10px system-ui;margin-top:3px}.main{display:flex;flex-direction:column;min-width:0;min-height:0}.bar{min-height:48px;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px;border-bottom:1px solid var(--line);padding:4px 10px;background:#faf6ef}.bar-title{font:600 13px 'Libre Baskerville',serif;overflow:hidden;white-space:nowrap;text-overflow:ellipsis}.tools{display:flex;align-items:center;gap:5px;flex-shrink:0}.lang-switch{display:inline-flex;gap:2px;border:1px solid #dbcbb6;border-radius:5px;overflow:hidden}.lang-switch a{font:600 10px system-ui;color:#6b4a25;text-decoration:none;padding:0 8px;min-height:27px;line-height:27px;background:#fffdf8}.lang-switch a.active{background:#e9dcc5}.uk-button.uk-button-small{font:11px system-ui;text-transform:none;border-radius:5px;padding:0 9px;min-height:29px;line-height:27px}.read-time{color:#786b59;font:11px system-ui;white-space:nowrap}.reader{flex:1;min-height:0;display:flex;flex-direction:column}.spread{flex:1;min-height:0;position:relative;overflow:hidden;padding:16px 24px 14px}.columns{height:100%;width:100%;overflow:hidden;column-count:2;column-gap:36px;padding:0;column-fill:auto;scroll-behavior:smooth}.columns-inner{height:100%;width:100%}.columns p{font:400 14px/1.73 'Noto Sans Telugu',sans-serif;margin:0 0 8px;text-align:left;overflow-wrap:anywhere;break-inside:avoid-column}.columns .section-title{font:600 18px/1.6 'Libre Baskerville',serif;color:#6b4a25;margin:0 0 9px;break-after:avoid-column}.columns .intro{font:11px system-ui;color:var(--gold);margin:0 0 8px}.spread:after{content:'';position:absolute;top:16px;bottom:14px;left:50%;width:1px;background:var(--line);pointer-events:none}.bottom{height:43px;border-top:1px solid var(--line);display:flex;align-items:center;justify-content:space-between;padding:0 10px;background:#faf6ef;font:11px system-ui;color:#6f6252}.bottom button{border:1px solid #dbcbb6;background:#fffdf8;border-radius:5px;padding:5px 11px;color:#654c2f;cursor:pointer}.bottom button:disabled{opacity:.35;cursor:default}.mobile{display:none}.mobile-side{display:none}.mobile-side.open{display:block;position:fixed;z-index:50;top:48px;left:0;bottom:0;width:230px;overflow:auto;background:#f6f1e8;box-shadow:3px 0 20px #0002;padding:10px}.font-large .columns p{font-size:16px;line-height:1.8}.font-large .columns .section-title{font-size:20px}@media(max-width:800px){.app{grid-template-columns:1fr}.side{display:none}.mobile{display:inline-block}.columns{column-count:1}.spread:after{display:none}.columns p{font-size:14px}.bar-title{max-width:100%}}@media(min-width:801px) and (max-width:1100px){.columns p{font-size:13px;line-height:1.65}}
 """.strip()
 
 READER_JS = r"""
@@ -99,7 +103,12 @@ def rest_get(base: str, key: str, path: str, params: dict[str, str]) -> list | d
 
 def fetch_via_rest(env: dict[str, str], series_name: str, language: str) -> tuple[dict, list[dict]]:
     base = env.get("NEXT_PUBLIC_SUPABASE_URL") or env.get("SUPABASE_PUBLIC_URL")
-    key = env.get("SERVICE_ROLE_KEY") or env.get("NEXT_PUBLIC_SUPABASE_ANON_KEY") or env.get("ANON_KEY")
+    key = (
+        env.get("SUPABASE_SERVICE_ROLE_KEY")
+        or env.get("SERVICE_ROLE_KEY")
+        or env.get("NEXT_PUBLIC_SUPABASE_ANON_KEY")
+        or env.get("ANON_KEY")
+    )
     if not base or not key:
         raise RuntimeError("Missing NEXT_PUBLIC_SUPABASE_URL and ANON/SERVICE key in .env")
 
@@ -234,54 +243,85 @@ def day_jump_html(day_number: int, language: str, siblings: list[int]) -> str:
     return "".join(links)
 
 
-def render_day_html(day: dict, series_name: str, siblings: list[int]) -> str:
+def render_day_html(
+    day: dict,
+    series_name: str,
+    siblings: list[int],
+    other_langs: list[str] | None = None,
+) -> str:
     language = day["language"]
     day_number = int(day["day_number"])
-    title = day.get("title") or "Jnanodayam"
-    subtitle = day.get("subtitle") or f"{series_name} · Day {day_number}"
+    title = day.get("title") or series_name
+    subtitle = day.get("subtitle") or f"Day {day_number}"
+    side_sub = f"{title} · {subtitle}"
     lang_label = "English" if language == "en" else "Telugu"
-    page_title = f"{title} · Day {day_number} · Two-page reader ({lang_label})"
+    page_title = f"{series_name} · Day {day_number} · {lang_label}"
     jump = day_jump_html(day_number, language, siblings)
     chapters = build_chapters(day)
     chapters_json = json.dumps(chapters, ensure_ascii=False, separators=(",", ":"))
 
-    return f"""<!doctype html><html lang="{language}"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>{page_title}</title><link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin><link href="https://fonts.googleapis.com/css2?family=Noto+Sans+Telugu:wght@400;500;600&family=Noto+Serif+Telugu:wght@400;500;600&display=swap" rel="stylesheet"><link href="https://fonts.googleapis.com/css2?family=Libre+Baskerville:ital,wght@0,400;0,700;1,400&family=Source+Sans+3:wght@400;500;600&display=swap" rel="stylesheet">
+    # Language switch (matches /series/.../day/N?lang=te|en)
+    langs = other_langs or [language]
+    if language not in langs:
+        langs = [language, *langs]
+    lang_bits = []
+    for lang in langs:
+        label = "EN" if lang == "en" else "TE"
+        cls = ' class="active"' if lang == language else ""
+        lang_bits.append(f'<a href="{day_filename(day_number, lang)}"{cls}>{label}</a>')
+    lang_switch = f'<span class="lang-switch">{"".join(lang_bits)}</span>' if len(langs) > 1 else ""
+
+    esc = html_lib.escape
+    return f"""<!doctype html><html lang="{language}"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>{esc(page_title)}</title><link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin><link href="https://fonts.googleapis.com/css2?family=Noto+Sans+Telugu:wght@400;500;600&family=Noto+Serif+Telugu:wght@400;500;600&display=swap" rel="stylesheet"><link href="https://fonts.googleapis.com/css2?family=Libre+Baskerville:ital,wght@0,400;0,700;1,400&family=Source+Sans+3:wght@400;500;600&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/uikit@3.23.0/dist/css/uikit.min.css"><style>
 {READER_CSS}
-</style></head><body><div class="app"><aside class="side"><a class="brand" href="index.html">QUANTUM LIFE UNIVERSITY</a><nav class="day-jump" aria-label="Days">{jump}</nav><h2>{title}</h2><p class="sub">{subtitle}</p><ul class="nav" id="nav"></ul></aside><main class="main"><header class="bar"><div style="display:flex;align-items:center;gap:6px;min-width:0"><button class="uk-button uk-button-default uk-button-small mobile" id="menu">☰</button><span class="bar-title" id="heading">{title}</span></div><div class="tools"><span class="read-time" id="time"></span><button class="uk-button uk-button-default uk-button-small" id="font" title="Toggle text size">A±</button></div></header><div class="reader"><div class="spread" id="spread"><div class="columns" id="columns"></div></div><footer class="bottom"><button id="prev">← Previous</button><span id="position"></span><button id="next">Next →</button></footer></div></main></div><div class="mobile-side" id="mobile-side"><nav class="day-jump" aria-label="Days">{jump}</nav><ul class="nav" id="mobile-nav"></ul></div><script>const chapters={chapters_json};
+</style></head><body><div class="app lang-{language}"><aside class="side"><a class="brand" href="index.html">QUANTUM LIFE UNIVERSITY</a><nav class="day-jump" aria-label="Days">{jump}</nav><h2>{esc(series_name)}</h2><p class="sub">{esc(side_sub)}</p><ul class="nav" id="nav"></ul></aside><main class="main"><header class="bar"><div style="display:flex;align-items:center;gap:6px;min-width:0"><button class="uk-button uk-button-default uk-button-small mobile" id="menu">☰</button><span class="bar-title" id="heading">{esc(title)}</span></div><div class="tools">{lang_switch}<span class="read-time" id="time"></span><button class="uk-button uk-button-default uk-button-small" id="font" title="Toggle text size">A±</button></div></header><div class="reader"><div class="spread" id="spread"><div class="columns" id="columns"></div></div><footer class="bottom"><button id="prev">← Previous</button><span id="position"></span><button id="next">Next →</button></footer></div></main></div><div class="mobile-side" id="mobile-side"><nav class="day-jump" aria-label="Days">{jump}</nav><ul class="nav" id="mobile-nav"></ul></div><script>const chapters={chapters_json};
 {READER_JS}</script></body></html>
 """
 
 
 def render_index_html(series: dict, days: list[dict]) -> str:
-    # Prefer English entries for the hub list when both exist
-    by_day: dict[int, dict] = {}
+    # Group by day number with both languages when present
+    by_day: dict[int, dict[str, dict]] = {}
     for day in days:
         n = int(day["day_number"])
-        if n not in by_day or day["language"] == "en":
-            by_day[n] = day
+        by_day.setdefault(n, {})[day["language"]] = day
 
     items = []
     for n in sorted(by_day):
-        day = by_day[n]
-        language = day["language"]
-        sections = day.get("sections") or []
-        blurb = " · ".join(s.get("title", "") for s in sections[:3] if s.get("title"))
-        if len(sections) > 3:
-            blurb = (blurb + " · …") if blurb else "…"
-        href = day_filename(n, language)
+        langs = by_day[n]
+        en = langs.get("en")
+        te = langs.get("te")
+        primary = en or te
+        title = (en or te or {}).get("title") or ""
+        links = []
+        if en:
+            links.append(f'<a href="{day_filename(n, "en")}">English</a>')
+        if te:
+            links.append(f'<a href="{day_filename(n, "te")}">తెలుగు</a>')
+        links_html = " · ".join(links)
+        esc_title = html_lib.escape(title)
         items.append(
-            f'        <li id="day-{n:02d}"><a href="{href}"><strong>Day {n}</strong>'
-            f"<em>{blurb or day.get('subtitle') or ''}</em></a></li>"
+            f'        <li id="day-{n:02d}"><strong>Day {n}</strong>'
+            f"<em>{esc_title}</em>"
+            f'<span class="day-langs">{links_html}</span></li>'
         )
 
     name = series.get("name") or "Series"
+    esc_name = html_lib.escape(name)
+    banner = ""
+    banner_path = DEFAULT_OUT / "assets" / "devi-navaratrula-jnanam-banner.png"
+    if banner_path.is_file():
+        banner = (
+            '      <img class="hub-banner" src="assets/devi-navaratrula-jnanam-banner.png" '
+            'alt="జ్ఞానోదయం · Devi Navratrula Jnanam" width="1600" height="900" />\n'
+        )
     return f"""<!DOCTYPE html>
 <html lang="en">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>{name} · Jnanodayam</title>
+  <title>{esc_name}</title>
   <style>
     :root {{
       --ink: #2a241f; --ink-muted: #56483a; --ink-soft: #8a6a4a;
@@ -304,6 +344,11 @@ def render_index_html(series: dict, days: list[dict]) -> str:
     .site-header a {{ text-decoration: none; }}
     .site-brand {{ display: block; font-size: 15px; font-weight: 700; letter-spacing: 0.04em; color: var(--heading); }}
     .site-brand span {{ display: block; font-size: 12px; font-weight: 400; color: var(--ink-soft); margin-top: 2px; }}
+    .hub-banner {{
+      display: block; width: 100%; height: auto; margin: 0 0 14px;
+      border-radius: 16px; border: 1px solid rgba(126, 92, 53, 0.15);
+      box-shadow: 0 10px 28px rgba(85, 58, 31, 0.12);
+    }}
     .hub-card {{
       box-sizing: border-box; padding: 28px 24px 36px; border-radius: 20px;
       background: var(--card); box-shadow: 0 16px 40px rgba(85, 58, 31, 0.14);
@@ -313,14 +358,13 @@ def render_index_html(series: dict, days: list[dict]) -> str:
     .lede {{ margin: 0 0 20px; color: var(--ink-muted); font-size: 15px; }}
     .week-label {{ margin: 28px 0 10px; font-size: 14px; font-weight: 700; color: var(--accent); }}
     .day-list {{ list-style: none; margin: 0; padding: 0; }}
-    .day-list li {{ margin: 0 0 8px; }}
-    .day-list a {{
-      display: block; padding: 12px 14px; border-radius: 12px; text-decoration: none;
-      background: var(--qa); border: 1px solid rgba(186, 122, 58, 0.18); color: var(--ink);
+    .day-list li {{
+      margin: 0 0 8px; padding: 12px 14px; border-radius: 12px;
+      background: var(--qa); border: 1px solid rgba(186, 122, 58, 0.18);
     }}
-    .day-list a:hover {{ border-color: var(--accent); }}
     .day-list strong {{ display: block; font-size: 14px; color: var(--heading); }}
-    .day-list em {{ font-style: normal; font-size: 13px; color: var(--ink-muted); }}
+    .day-list em {{ display: block; font-style: normal; font-size: 13px; color: var(--ink-muted); margin: 4px 0 8px; }}
+    .day-langs a {{ margin-right: 10px; font-size: 13px; font-weight: 600; }}
     .site-footer {{ margin-top: 22px; padding: 8px 4px; font-size: 12px; color: var(--ink-soft); text-align: center; }}
   </style>
 </head>
@@ -328,20 +372,20 @@ def render_index_html(series: dict, days: list[dict]) -> str:
   <div class="site-wrap">
     <header class="site-header">
       <a class="site-brand" href="index.html">
-        Jnanodayam
-        <span>{name}</span>
+        {esc_name}
+        <span>Self Knowledge Reading</span>
       </a>
       <nav><a href="index.html">Programme</a></nav>
     </header>
     <div class="hub-card">
-      <h1>Programme</h1>
-      <p class="lede">Exported from the Self Knowledge Reading library · {name}.</p>
+{banner}      <h1>Programme</h1>
+      <p class="lede">Same content as the library reader · {esc_name}.</p>
       <p class="week-label">Days</p>
       <ul class="day-list">
 {chr(10).join(items)}
       </ul>
     </div>
-    <footer class="site-footer">Jnanodayam · {name} · Quantum Life University</footer>
+    <footer class="site-footer">{esc_name} · Quantum Life University</footer>
   </div>
 </body>
 </html>
@@ -349,7 +393,7 @@ def render_index_html(series: dict, days: list[dict]) -> str:
 
 
 def main() -> int:
-    env = {**os.environ, **load_dotenv(ROOT / ".env")}
+    env = {**os.environ, **load_dotenv(ROOT / ".env"), **load_dotenv(ROOT / ".env.local")}
 
     # Avoid Windows console encoding issues on arrows / emoji.
     if hasattr(sys.stdout, "reconfigure"):
@@ -358,14 +402,28 @@ def main() -> int:
         except Exception:
             pass
 
-    print("Export series -> static HTML readers")
+    parser = argparse.ArgumentParser(description="Export series readings to static HTML")
+    parser.add_argument("--series", default=None, help="Series name")
+    parser.add_argument("--out", default=None, help="Output folder")
+    parser.add_argument("--lang", default=None, choices=("en", "te", "all"), help="Language")
+    parser.add_argument("--all", action="store_true", help="Non-interactive: defaults + all languages")
+    args = parser.parse_args()
+
+    print("Export series -> static HTML readers (library two-page style)")
     print(f"Repo root: {ROOT}")
-    series_name = ask("Series name", DEFAULT_SERIES)
-    out_raw = ask("Output folder", str(DEFAULT_OUT))
+
+    if args.all or (args.series and args.out and args.lang):
+        series_name = args.series or DEFAULT_SERIES
+        out_raw = args.out or str(DEFAULT_OUT)
+        language = (args.lang or "all").lower()
+    else:
+        series_name = args.series or ask("Series name", DEFAULT_SERIES)
+        out_raw = args.out or ask("Output folder", str(DEFAULT_OUT))
+        language = (args.lang or ask("Language (en / te / all)", "all")).lower()
+
     out_dir = Path(out_raw).expanduser()
     if not out_dir.is_absolute():
         out_dir = (ROOT / out_dir).resolve()
-    language = ask("Language (en / te / all)", "en").lower()
     if language not in ("en", "te", "all"):
         print("Language must be en, te, or all", file=sys.stderr)
         return 1
@@ -388,10 +446,17 @@ def main() -> int:
 
     # Sibling day numbers per language for Prev/Next links
     by_lang: dict[str, list[int]] = {}
+    langs_by_day: dict[int, list[str]] = {}
     for day in days:
-        by_lang.setdefault(day["language"], []).append(int(day["day_number"]))
+        n = int(day["day_number"])
+        by_lang.setdefault(day["language"], []).append(n)
+        langs_by_day.setdefault(n, [])
+        if day["language"] not in langs_by_day[n]:
+            langs_by_day[n].append(day["language"])
     for lang in by_lang:
         by_lang[lang] = sorted(set(by_lang[lang]))
+    for n in langs_by_day:
+        langs_by_day[n] = sorted(langs_by_day[n], key=lambda x: 0 if x == "te" else 1)
 
     written = 0
     for day in days:
@@ -399,8 +464,14 @@ def main() -> int:
         if not chapters:
             print(f"  skip day {day['day_number']} {day['language']} (no sections)")
             continue
-        path = out_dir / day_filename(int(day["day_number"]), day["language"])
-        html = render_day_html(day, series["name"], by_lang[day["language"]])
+        n = int(day["day_number"])
+        path = out_dir / day_filename(n, day["language"])
+        html = render_day_html(
+            day,
+            series["name"],
+            by_lang[day["language"]],
+            other_langs=langs_by_day.get(n, [day["language"]]),
+        )
         path.write_text(html, encoding="utf-8")
         written += 1
         print(f"  wrote {path.name} ({len(chapters)} sections)")

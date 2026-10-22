@@ -28,6 +28,12 @@ function todayLocalIsoDate() {
   return `${y}-${m}-${d}`;
 }
 
+function parseCheckbox(value: FormDataEntryValue | null) {
+  if (value === null || value === undefined) return false;
+  const text = String(value).trim().toLowerCase();
+  return text === "1" || text === "true" || text === "on" || text === "yes";
+}
+
 async function saveImage(file: File, title: NewsletterSectionTitle, takenOn: string) {
   if (!file.type.startsWith("image/")) throw new Error("Choose a JPEG, PNG, or WebP image.");
   if (file.size > 5_000_000) throw new Error("Use an image smaller than 5 MB.");
@@ -57,10 +63,14 @@ export type NewsletterAssetListItem = {
   label: string;
   summary: string;
   instruction: string;
+  summaryInstruction: string;
+  useAsBackground: boolean;
   imageUrl: string;
   takenOn: string;
   createdAt: string;
 };
+
+export type NewsletterSectionSettingsMap = Partial<Record<NewsletterSectionTitle, string>>;
 
 function mapAsset(row: {
   id: string;
@@ -68,6 +78,8 @@ function mapAsset(row: {
   label: string;
   summary: string;
   instruction?: string | null;
+  summary_instruction?: string | null;
+  use_as_background?: boolean | null;
   image_url: string;
   taken_on: string;
   created_at: string;
@@ -79,13 +91,16 @@ function mapAsset(row: {
     label: row.label,
     summary: row.summary,
     instruction: row.instruction ?? "",
+    summaryInstruction: row.summary_instruction ?? "",
+    useAsBackground: Boolean(row.use_as_background),
     imageUrl: row.image_url,
     takenOn: row.taken_on,
     createdAt: row.created_at,
   };
 }
 
-const ASSET_SELECT = "id, title, label, summary, instruction, image_url, taken_on, created_at";
+const ASSET_SELECT =
+  "id, title, label, summary, instruction, summary_instruction, use_as_background, image_url, taken_on, created_at";
 
 export async function listNewsletterAssets(options?: {
   title?: NewsletterSectionTitle;
@@ -118,11 +133,59 @@ export async function listNewsletterAssets(options?: {
   return data.map(mapAsset).filter((item): item is NewsletterAssetListItem => Boolean(item));
 }
 
+export async function listNewsletterSectionSettings(): Promise<NewsletterSectionSettingsMap> {
+  const admin = await requireAdmin();
+  if (!admin.supabase || !admin.userId) return {};
+
+  const { data, error } = await admin.supabase.from("newsletter_section_settings").select("title, instruction");
+  if (error || !data) return {};
+
+  const map: NewsletterSectionSettingsMap = {};
+  for (const row of data) {
+    if (!isNewsletterSectionTitle(row.title)) continue;
+    map[row.title] = row.instruction ?? "";
+  }
+  return map;
+}
+
+export async function upsertNewsletterSectionInstruction(formData: FormData) {
+  const admin = await requireAdmin();
+  if (!admin.supabase || !admin.userId) {
+    return { ok: false as const, error: admin.error ?? "Sign in as an admin." };
+  }
+
+  const titleRaw = String(formData.get("title") ?? "").trim();
+  const instruction = String(formData.get("instruction") ?? "").trim();
+  if (!isNewsletterSectionTitle(titleRaw)) {
+    return { ok: false as const, error: "Invalid section title." };
+  }
+  if (instruction.length > 4000) {
+    return { ok: false as const, error: "Keep the section instruction under 4000 characters." };
+  }
+
+  const { error } = await admin.supabase.from("newsletter_section_settings").upsert(
+    {
+      title: titleRaw,
+      instruction,
+      updated_at: new Date().toISOString(),
+      updated_by: admin.userId,
+    },
+    { onConflict: "title" },
+  );
+
+  if (error) return { ok: false as const, error: error.message };
+
+  revalidatePath("/admin/newsletter");
+  return { ok: true as const, title: titleRaw as NewsletterSectionTitle, instruction };
+}
+
 function parseAssetFields(formData: FormData) {
   const titleRaw = String(formData.get("title") ?? "").trim();
   const label = String(formData.get("label") ?? "").trim();
   const summary = String(formData.get("summary") ?? "").trim();
   const instruction = String(formData.get("instruction") ?? "").trim();
+  const summaryInstruction = String(formData.get("summaryInstruction") ?? "").trim();
+  const useAsBackground = parseCheckbox(formData.get("useAsBackground"));
   const takenOnRaw = String(formData.get("takenOn") ?? "").trim() || todayLocalIsoDate();
   const image = formData.get("image");
   const file = image instanceof File && image.size > 0 ? image : null;
@@ -131,7 +194,10 @@ function parseAssetFields(formData: FormData) {
   if (!isNewsletterSectionTitle(titleRaw)) return { ok: false as const, error: "Invalid section title." };
   if (label.length < 2) return { ok: false as const, error: "Enter a long label (header title + subtitle)." };
   if (summary.length < 2) return { ok: false as const, error: "Enter topic content in the summary." };
-  if (instruction.length > 2000) return { ok: false as const, error: "Keep the instruction under 2000 characters." };
+  if (instruction.length > 2000) return { ok: false as const, error: "Keep the photo instruction under 2000 characters." };
+  if (summaryInstruction.length > 2000) {
+    return { ok: false as const, error: "Keep the summary instruction under 2000 characters." };
+  }
   if (!/^\d{4}-\d{2}-\d{2}$/.test(takenOnRaw)) {
     return { ok: false as const, error: "Date taken must be YYYY-MM-DD." };
   }
@@ -142,6 +208,8 @@ function parseAssetFields(formData: FormData) {
     label,
     summary,
     instruction,
+    summaryInstruction,
+    useAsBackground,
     takenOn: takenOnRaw,
     file,
   };
@@ -171,6 +239,8 @@ export async function createNewsletterAsset(formData: FormData) {
       label: parsed.label,
       summary: parsed.summary,
       instruction: parsed.instruction,
+      summary_instruction: parsed.summaryInstruction,
+      use_as_background: parsed.useAsBackground,
       image_url: imageUrl,
       taken_on: parsed.takenOn,
       created_by: admin.userId,
@@ -230,6 +300,8 @@ export async function updateNewsletterAsset(formData: FormData) {
       label: parsed.label,
       summary: parsed.summary,
       instruction: parsed.instruction,
+      summary_instruction: parsed.summaryInstruction,
+      use_as_background: parsed.useAsBackground,
       image_url: imageUrl,
       taken_on: parsed.takenOn,
       updated_at: new Date().toISOString(),

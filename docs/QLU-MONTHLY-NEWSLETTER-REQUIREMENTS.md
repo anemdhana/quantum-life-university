@@ -8,7 +8,7 @@
 | **Primary language** | Telugu (v1) |
 | **Status** | Draft — admin asset intake in progress |
 | **Owner** | QLU Communications / Editorial |
-| **Related** | [README](./QLU-MONTHLY-NEWSLETTER-README.md) · [Technical](./QLU-MONTHLY-NEWSLETTER-TECHNICAL.md) · [API](./QLU-MONTHLY-NEWSLETTER-API.md) · [Look & feel](./QLU-NEWSLETTER-LOOK-AND-FEEL.md) |
+| **Related** | [README](./QLU-MONTHLY-NEWSLETTER-README.md) · [Composer roadmap](./QLU-NEWSLETTER-COMPOSER.md) · [Technical](./QLU-MONTHLY-NEWSLETTER-TECHNICAL.md) · [API](./QLU-MONTHLY-NEWSLETTER-API.md) · [Look & feel](./QLU-NEWSLETTER-LOOK-AND-FEEL.md) |
 
 ---
 
@@ -23,7 +23,8 @@ A monthly soft-copy PDF that summarizes QLU’s teaching, community life, and in
 - Report Dr. Newton’s travel/classes, Vanya Maitreya, and campus (Goloka / Sahasrara / QLU) progress.
 - Announce what is coming next so readers can plan.
 - Collect photos and captions in an **admin asset library** so editors can assemble issues without hunting files across chats.
-- Near **month-end**, **download** accumulated resources as **Markdown + images** so any AI (ChatGPT, Grok, etc.) can draft the newsletter from files plus the static look-and-feel brief.
+- Prefer **Admin → Composer** to lay out A4 pages and Print / Save PDF with little or no ChatGPT ([phased roadmap](./QLU-NEWSLETTER-COMPOSER.md)).
+- Optionally near **month-end**, **download** Markdown + images so any AI (ChatGPT, Grok, etc.) can still draft from the export pack (fallback).
 
 **Non-goals (v1)**
 
@@ -174,8 +175,16 @@ Editors need a place inside **Self Knowledge Reading admin** to bank **photo sna
 | **Image** (photo snapshot) | Yes (on create) | JPEG / PNG / WebP; max 5 MB. Stored under the app’s public newsletter assets path. |
 | **Label** | Yes | **Header title + subtitle** for the PDF (Telugu-friendly). First line = title; further lines = subtitle (or one line `Title — Subtitle`). |
 | **Summary** | Yes | **Topic content** about this photo/item — the body text the PDF should carry (who, what, why it matters). |
-| **Instruction** | No | Optional notes for ChatGPT on **how this item should look** (layout, emphasis, pairing). Not factual content. |
+| **Instruction** (photo) | No | Optional notes for ChatGPT on **how this photo/layout should look**. Not factual content. |
+| **Summary Instruction** | No | Optional notes on **how Summary text should be presented** (bullets, length, tone). Not new facts. |
+| **Use as background** | No | Checkbox: use the photo as a soft washed background so text stays primary. |
 | **Date taken** | Yes | Calendar date; **defaults to today** in the form; editable. |
+
+### 7.3b Section instruction
+
+| Field | Required | Notes |
+|-------|----------|--------|
+| **Section Instruction** | No | Per allow-listed section title. Describes whole-section look: grids (2/3), content placement, background colour/image, density. Stored in `newsletter_section_settings`. |
 
 ### 7.4 Allowed values for **Title** (closed list)
 
@@ -225,8 +234,8 @@ Download **everything added so far** in the global library (optionally filtered 
 |-------------|---------|
 | `00-LOOK-AND-FEEL.md` | Copy of [QLU-NEWSLETTER-LOOK-AND-FEEL.md](./QLU-NEWSLETTER-LOOK-AND-FEEL.md) (canonical design brief) |
 | `01-BRIEF.md` | Generated: coverage month, language (te), issue target date, reminder of seven headings |
-| `02-LAYOUT-DIRECTIVES.md` | All non-empty **Instruction** fields — **mandatory** layout rules for ChatGPT |
-| `sections/*.md` | One Markdown file per section title that has ≥1 asset (or empty stub with “no items”); Instruction as **MUST FOLLOW** blockquote |
+| `02-LAYOUT-DIRECTIVES.md` | Section + photo Instructions and background flags — **mandatory** layout rules |
+| `sections/*.md` | One Markdown file per section; section Instruction + per-item MUST FOLLOW blockquotes |
 | `images/*` | Image binaries referenced by relative paths from the section markdown |
 | `MANIFEST.md` | Counts (incl. instruction count), date filter used, export timestamp |
 
@@ -250,13 +259,13 @@ Each `sections/….md` groups assets under that section title:
 …
 ```
 
-AI must treat **Label** as header title + subtitle, **Summary** as topic content, and **Instruction** as presentation-only guidance; do not invent facts beyond Label/Summary (plus BRIEF). Prefer Tiles only when there is enough content; otherwise use Article flow.
+AI must treat **Label** as header title + subtitle, **Summary** as topic content, and **Instruction** as presentation-only guidance; do not invent facts beyond Label/Summary (plus BRIEF). Layout follows section/photo Instructions (calm single-column if none).
 
 ### 8.5 Admin behaviour
 
 - Panel: **Prepare PDF (ChatGPT)** on Admin → Newsletter (above the asset gallery).
 - Button: **Download resources (.md + images)** — zip for the signed-in admin.
-- Options: date range (default = **previous calendar month** coverage), issue month (`YYYY-MM`), optional “all global assets”, **PDF layout** (**Tiles** compact grid or **Article** reading flow).
+- Options: date range (default = **previous calendar month** coverage), issue month (`YYYY-MM`), optional “all global assets”. Layout comes from section/photo Instructions.
 - **Copy prompt** with two modes:
   - **First PDF (full prompt)** — new ChatGPT chat; attach the whole zip (look-and-feel + sections + images).
   - **Next month (short)** — same ChatGPT project; attach only this month’s `sections/` + `images/` (style already known).
@@ -265,11 +274,11 @@ AI must treat **Label** as header title + subtitle, **Summary** as topic content
 
 **First issue / new chat** (attach zip or unpack and upload folders):
 
-> Follow `00-LOOK-AND-FEEL.md`. Use `01-BRIEF.md` and `sections/*.md` + `images/` as the only factual sources. Draft the Telugu monthly newsletter PDF with the seven fixed body headings in order. Label = header title + subtitle; Summary = topic content; Instruction = presentation. Prefer Tiles when there is enough content; otherwise Article. Do not invent teachings. File name `QLU-Newsletter-YYYY-MM-te.pdf`.
+> Follow `00-LOOK-AND-FEEL.md`. Use `01-BRIEF.md`, `02-LAYOUT-DIRECTIVES.md`, and `sections/*.md` + `images/` as sources. Draft the Telugu monthly newsletter PDF with the seven fixed body headings in order. Label = header title + subtitle; Summary = topic content; section/photo Instruction = presentation. Do not invent teachings. File name `QLU-Newsletter-YYYY-MM-te.pdf`.
 
 **Later months** (short; look-and-feel already in the chat):
 
-> New QLU issue `YYYY-MM`. Same look-and-feel and heading order. Attach only this month’s `sections/*.md` + `images/*`. Layout preference: Tiles (relax if thin) or Article. Label = title/subtitle, Summary = topic body, Instruction = look notes; no invented facts. Empty sections → ఈ నెలలో ప్రత్యేక నివేదిక లేదు.
+> New QLU issue `YYYY-MM`. Same look-and-feel and heading order. Attach `02-LAYOUT-DIRECTIVES.md` + this month’s `sections/*.md` + `images/*`. Label = title/subtitle, Summary = topic body, Instructions = look notes; no invented facts. Empty sections → ఈ నెలలో ప్రత్యేక నివేదిక లేదు.
 
 App source: `lib/newsletter/prompts.ts` (`firstNewsletterPdfPrompt` / `followUpNewsletterPdfPrompt`).
 
@@ -282,8 +291,8 @@ Full design tokens, fonts, logos, sizing: **[QLU-NEWSLETTER-LOOK-AND-FEEL.md](./
 | Item | Guidance (summary) |
 |------|---------------------|
 | **Page size** | A4 |
-| **Layout** | **Article:** single column. **Tiles:** soft 2-column compact grid within sections. Calm masthead |
-| **Typography** | Telugu sans ≥ 11 pt (Article) / ≥ 9–10 pt (Tiles); headings `#6b4a25`; brand gold tracked caps |
+| **Layout** | Driven by section/photo Instructions; calm single-column if none. Calm masthead |
+| **Typography** | Telugu sans ≥ 11 pt (dense grids ≥ 9–10 pt); headings `#6b4a25`; brand gold tracked caps |
 | **Colours** | Paper `#fffdf8`, ink `#352d26`, gold `#a17b43`, side `#f6f1e8` |
 | **Imagery** | From export pack; Label → title/subtitle; Summary → topic body |
 | **Versioning** | Footer: QLU + issue id + page X of Y |
@@ -373,13 +382,15 @@ T−1   Upload + queue test to internal list
 
 ## 15. Future Enhancements (backlog)
 
+Primary roadmap for layout / PDF / AI assist: **[QLU-NEWSLETTER-COMPOSER.md](./QLU-NEWSLETTER-COMPOSER.md)** (Phases 1 follow-ups → 2 DB+PDF → 3 light AI → 4 distribution).
+
+Additional backlog:
+
 - Web archive page with past PDFs
 - English edition
 - Optional usage log: which global assets were used in issue `YYYY-MM` (assets remain global)
 - Filter / group admin list by section title and date range
-- One-click “copy AI prompt” beside Download
 - Pull “highlight classes” metadata from Self Knowledge Reading / admin calendar
-- Template InDesign / Google Docs / LibreOffice master file
 - Automated reminder emails at T−10 / T−4 to role owners
 
 ---

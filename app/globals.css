@@ -920,41 +920,6 @@ a {
   margin-top: 12px;
 }
 
-.newsletter-layout-tabs {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  gap: 8px;
-  margin-top: 12px;
-}
-
-.newsletter-layout-label {
-  font: 600 12px/1.2 system-ui, sans-serif;
-  color: #6f6252;
-  margin-right: 4px;
-}
-
-.newsletter-layout-tabs button[role="radio"] {
-  border: 1px solid var(--line);
-  border-radius: 8px;
-  background: #fff;
-  padding: 6px 10px;
-  font: 600 12px/1.2 system-ui, sans-serif;
-  color: #6f6252;
-  cursor: pointer;
-}
-
-.newsletter-layout-tabs button[role="radio"].active {
-  border-color: color-mix(in srgb, var(--gold) 55%, var(--line));
-  background: color-mix(in srgb, var(--side) 70%, #fff);
-  color: var(--ink);
-}
-
-.newsletter-layout-hint {
-  flex: 1 1 12rem;
-  font-size: 12px;
-}
-
 .newsletter-field-hint {
   display: block;
   margin-top: 4px;
@@ -968,6 +933,49 @@ a {
   font-size: 12px;
   color: #6b4a25;
   white-space: pre-wrap;
+}
+
+.newsletter-section-instruction {
+  margin: 12px 0 16px;
+  padding: 12px;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  background: color-mix(in srgb, var(--side) 55%, #fff);
+}
+
+.newsletter-section-instruction-actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 10px;
+  margin-top: 8px;
+}
+
+.newsletter-check {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin: 10px 0 0;
+  font: 600 13px/1.3 system-ui, sans-serif;
+  color: var(--ink);
+}
+
+.newsletter-check-hint {
+  display: block;
+  margin: 4px 0 10px 24px;
+}
+
+.newsletter-bg-flag {
+  display: inline-block;
+  margin-top: 4px;
+  font-size: 11px;
+  font-weight: 600;
+  color: #6b4a25;
+}
+
+.newsletter-detail-preview.is-background img,
+.newsletter-photo-media.is-background img {
+  opacity: 0.45;
 }
 
 .newsletter-prompt-tabs {
@@ -1073,9 +1081,9 @@ a {
 
 .newsletter-section-panel {
   min-width: 0;
-  display: flex;
-  flex-direction: column;
   max-height: calc(100vh - 10rem);
+  overflow: auto;
+  overscroll-behavior: contain;
   padding: 12px;
   border: 1px solid var(--line);
   border-radius: 12px;
@@ -1086,7 +1094,6 @@ a {
   display: grid;
   gap: 12px;
   margin-bottom: 12px;
-  flex-shrink: 0;
 }
 
 .newsletter-section-head h2 {
@@ -1140,12 +1147,9 @@ a {
 .newsletter-photo-list {
   list-style: none;
   margin: 0;
-  padding: 0 4px 4px 0;
+  padding: 0;
   display: grid;
   gap: 12px;
-  overflow: auto;
-  min-height: 0;
-  flex: 1 1 auto;
 }
 
 .newsletter-photo-row {
@@ -1244,8 +1248,30 @@ a {
 }
 
 .newsletter-detail-modal {
-  width: min(100%, 420px);
+  width: min(100%, 920px);
+  max-height: min(92vh, 760px);
   display: grid;
+  gap: 12px;
+  overflow: auto;
+}
+
+.newsletter-detail-grid {
+  display: grid;
+  grid-template-columns: minmax(220px, 280px) minmax(0, 1fr);
+  gap: 14px;
+  align-items: start;
+}
+
+.newsletter-detail-media,
+.newsletter-detail-fields {
+  display: grid;
+  gap: 8px;
+  align-content: start;
+}
+
+.newsletter-detail-text-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
   gap: 10px;
 }
 
@@ -1259,14 +1285,14 @@ a {
 .newsletter-detail-preview img {
   display: block;
   width: 100%;
-  max-height: 180px;
+  aspect-ratio: 4 / 3;
+  max-height: 220px;
   object-fit: cover;
 }
 
-.newsletter-detail-row {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 10px;
+.newsletter-detail-fields .newsletter-field textarea {
+  min-height: 5.5rem;
+  resize: vertical;
 }
 
 .newsletter-detail-actions {
@@ -1291,11 +1317,7 @@ a {
   }
 
   .newsletter-section-panel {
-    max-height: none;
-  }
-
-  .newsletter-photo-list {
-    max-height: 70vh;
+    max-height: min(70vh, calc(100vh - 8rem));
   }
 
   .newsletter-photo-row {
@@ -1307,8 +1329,13 @@ a {
     padding: 12px 14px 14px;
   }
 
-  .newsletter-detail-row {
+  .newsletter-detail-grid,
+  .newsletter-detail-text-grid {
     grid-template-columns: 1fr;
+  }
+
+  .newsletter-detail-preview img {
+    max-height: 160px;
   }
 }
 
@@ -1488,5 +1515,521 @@ a {
   .series-hero,
   .library-row {
     grid-template-columns: 1fr;
+  }
+}
+
+/* ?? Newsletter Composer (match home soft-paper look) ?? */
+.composer-hero {
+  margin: 0 0 16px;
+  padding: 28px 30px 24px;
+  border: 1px solid var(--line);
+  border-radius: 22px;
+  background:
+    radial-gradient(420px 180px at 12% -10%, rgba(161, 123, 67, 0.16), transparent 70%),
+    linear-gradient(180deg, #f8f3ea 0%, #fffdf8 62%);
+}
+
+.composer-hero-title {
+  margin: 0;
+  font-family: var(--font-serif-en), "Libre Baskerville", serif;
+  font-size: clamp(1.75rem, 3vw, 2.4rem);
+  font-weight: 600;
+  line-height: 1.25;
+  color: #6b4a25;
+}
+
+.composer-hero-lead {
+  max-width: 52ch;
+  margin: 10px 0 0;
+  font-size: 1.02rem;
+  line-height: 1.55;
+}
+
+.composer-shell {
+  display: grid;
+  gap: 14px;
+}
+
+.composer-toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: end;
+  gap: 12px;
+  padding: 14px 16px;
+  border: 1px solid var(--line);
+  border-radius: 18px;
+  background:
+    linear-gradient(180deg, color-mix(in srgb, var(--side) 70%, #fff) 0%, #fffdf8 100%);
+}
+
+.composer-month {
+  min-width: 10rem;
+  margin: 0;
+}
+
+.composer-save-hint {
+  flex: 1 1 12rem;
+  margin: 0;
+  font-size: 13px;
+}
+
+.composer-toolbar-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.composer-board {
+  display: grid;
+  grid-template-columns: minmax(12rem, 15rem) minmax(0, 1fr) minmax(16rem, 21rem);
+  gap: 14px;
+  align-items: start;
+}
+
+.composer-pages,
+.composer-inspector {
+  position: sticky;
+  top: 12px;
+  max-height: calc(100vh - 8rem);
+  overflow: auto;
+  padding: 14px;
+  border: 1px solid var(--line);
+  border-radius: 18px;
+  background:
+    linear-gradient(180deg, #f8f3ea 0%, #fffdf8 55%);
+}
+
+.composer-pages .admin-panel-label,
+.composer-inspector .admin-panel-label {
+  margin: 0 0 6px;
+  font: 600 11px/1.2 system-ui, sans-serif;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--gold);
+}
+
+.composer-pages ul {
+  list-style: none;
+  margin: 8px 0 0;
+  padding: 0;
+  display: grid;
+  gap: 8px;
+}
+
+.composer-pages li > button {
+  width: 100%;
+  display: grid;
+  gap: 2px;
+  text-align: left;
+  border: 1px solid transparent;
+  border-radius: 14px;
+  background: rgba(255, 253, 248, 0.75);
+  padding: 10px 11px;
+  cursor: pointer;
+  font: inherit;
+  color: inherit;
+}
+
+.composer-pages li > button strong {
+  font-family: var(--font-serif-en), "Libre Baskerville", serif;
+  font-size: 13px;
+  font-weight: 600;
+  color: #6b4a25;
+}
+
+.composer-pages li > button span {
+  font-size: 11px;
+  color: #8a7358;
+}
+
+.composer-pages li > button:hover {
+  border-color: var(--line);
+}
+
+.composer-pages li > button.active {
+  border-color: color-mix(in srgb, var(--gold) 45%, var(--line));
+  background: color-mix(in srgb, var(--gold) 14%, #fffdf8);
+}
+
+.composer-page-tools {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  padding: 0 4px 4px;
+}
+
+.composer-add-layouts {
+  margin-top: 16px;
+  display: grid;
+  gap: 6px;
+}
+
+.composer-layout-chip {
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  background: rgba(255, 253, 248, 0.9);
+  padding: 7px 12px;
+  font: 600 12px/1.2 system-ui, sans-serif;
+  color: #6b4a25;
+  cursor: pointer;
+  text-align: left;
+}
+
+.composer-layout-chip:hover {
+  border-color: color-mix(in srgb, var(--gold) 50%, var(--line));
+  background: color-mix(in srgb, var(--gold) 12%, #fff);
+}
+
+.composer-canvas-wrap {
+  display: flex;
+  justify-content: center;
+  min-width: 0;
+  padding: 18px 14px;
+  overflow: auto;
+  max-height: calc(100vh - 8rem);
+  border: 1px solid var(--line);
+  border-radius: 22px;
+  background:
+    radial-gradient(380px 160px at 80% 0%, rgba(161, 123, 67, 0.1), transparent 70%),
+    linear-gradient(180deg, #f3ebe0 0%, var(--side) 40%, #fffdf8 100%);
+}
+
+.composer-a4 {
+  position: relative;
+  width: min(100%, 440px);
+  aspect-ratio: 210 / 297;
+  padding: 22px 20px;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  background:
+    linear-gradient(180deg, #fffefb 0%, #fffdf8 55%, #fbf6ee 100%);
+  color: var(--ink);
+  box-shadow:
+    0 1px 0 rgba(255, 255, 255, 0.7) inset,
+    0 18px 40px rgba(53, 45, 38, 0.12);
+  overflow: hidden;
+}
+
+.composer-brand {
+  margin: 0 0 10px;
+  font: 600 10px/1.2 var(--font-sans-en), "Source Sans 3", system-ui, sans-serif;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: var(--gold);
+}
+
+.composer-gold-rule {
+  width: 3.2rem;
+  height: 2px;
+  margin: 0 0 16px;
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--gold) 75%, #fff);
+}
+
+.composer-issue-meta {
+  margin: 18px 0 0;
+  padding-top: 10px;
+  border-top: 1px solid var(--line);
+  font-size: 11px;
+  color: #7c6e5d;
+}
+
+.composer-page-kicker {
+  margin: 0 0 12px;
+  font: 600 11px/1.3 system-ui, sans-serif;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--gold);
+}
+
+.composer-slot {
+  display: block;
+  width: 100%;
+  border: 1px dashed transparent;
+  border-radius: 12px;
+  background: transparent;
+  padding: 8px;
+  text-align: left;
+  cursor: pointer;
+  font: inherit;
+  color: inherit;
+}
+
+.composer-slot.is-selected {
+  border-color: color-mix(in srgb, var(--gold) 55%, var(--line));
+  background: color-mix(in srgb, var(--side) 45%, transparent);
+  box-shadow: 0 0 0 1px color-mix(in srgb, var(--gold) 20%, transparent);
+}
+
+.composer-a4 h1,
+.composer-a4 h2,
+.composer-a4 h3 {
+  margin: 0 0 6px;
+  font-family: var(--font-serif-en), "Libre Baskerville", serif;
+  font-weight: 600;
+  color: #6b4a25;
+  line-height: 1.3;
+}
+
+.composer-a4 .lang-te h1,
+.composer-a4 h1.lang-te,
+.composer-a4 .lang-te,
+.composer-layout-masthead h1 {
+  font-family: var(--font-serif-te), "Noto Serif Telugu", var(--font-sans-te), "Noto Sans Telugu", serif;
+}
+
+.composer-a4 h1 {
+  font-size: 1.45rem;
+}
+
+.composer-a4 h2 {
+  font-size: 1.08rem;
+}
+
+.composer-a4 h3 {
+  font-size: 0.95rem;
+}
+
+.composer-sub {
+  margin: 0 0 8px;
+  font-size: 12px;
+  color: #8a6844;
+}
+
+.composer-body {
+  margin: 0;
+  font-size: 12.5px;
+  line-height: 1.55;
+  white-space: pre-wrap;
+  color: var(--ink);
+}
+
+.composer-placeholder {
+  display: grid;
+  place-items: center;
+  min-height: 88px;
+  color: #8a7358;
+  font-size: 12px;
+  letter-spacing: 0.04em;
+  background:
+    linear-gradient(180deg, color-mix(in srgb, var(--side) 80%, #fff), var(--side));
+  border: 1px dashed color-mix(in srgb, var(--gold) 35%, var(--line));
+  border-radius: 12px;
+}
+
+.composer-media img,
+.composer-tile-media img {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  border-radius: 12px;
+  border: 1px solid var(--line);
+}
+
+.composer-layout-masthead {
+  display: grid;
+  align-content: center;
+  justify-items: start;
+  min-height: 100%;
+  background:
+    radial-gradient(280px 120px at 20% 0%, rgba(161, 123, 67, 0.14), transparent 70%),
+    linear-gradient(180deg, #f8f3ea 0%, #fffdf8 70%);
+}
+
+.composer-layout-hero-split .composer-hero-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+  height: calc(100% - 2.2rem);
+}
+
+.composer-layout-hero-split .composer-media {
+  min-height: 0;
+  height: 100%;
+  padding: 0;
+}
+
+.composer-layout-hero-split .composer-media img {
+  height: 100%;
+  min-height: 240px;
+}
+
+.composer-layout-hero-split .composer-copy {
+  align-self: center;
+}
+
+.composer-layout-article {
+  display: grid;
+  gap: 12px;
+  align-content: start;
+}
+
+.composer-layout-article .composer-media img {
+  max-height: 190px;
+  width: 100%;
+}
+
+.composer-layout-bg-soft {
+  display: grid;
+}
+
+.composer-bg-layer {
+  position: absolute;
+  inset: 0;
+  background-size: cover;
+  background-position: center;
+  opacity: 0.22;
+  border-radius: 0;
+  border: 0;
+  padding: 0;
+}
+
+.composer-bg-copy {
+  position: relative;
+  z-index: 1;
+  margin-top: 28%;
+  padding: 14px;
+  border-radius: 14px;
+  background: color-mix(in srgb, #fffdf8 88%, transparent);
+  border: 1px solid color-mix(in srgb, var(--line) 80%, transparent);
+}
+
+.composer-layout-tiles .composer-tile-grid {
+  display: grid;
+  gap: 10px;
+}
+
+.composer-layout-tiles.cols-2 .composer-tile-grid {
+  grid-template-columns: 1fr 1fr;
+}
+
+.composer-layout-tiles.cols-3 .composer-tile-grid {
+  grid-template-columns: 1fr 1fr 1fr;
+}
+
+.composer-tile {
+  background: rgba(255, 253, 248, 0.92);
+  border: 1px solid var(--line);
+  border-radius: 14px;
+}
+
+.composer-tile-media {
+  aspect-ratio: 4 / 3;
+  margin-bottom: 8px;
+  overflow: hidden;
+  border-radius: 10px;
+  background: var(--side);
+}
+
+.composer-inspector .newsletter-field {
+  margin-bottom: 8px;
+}
+
+.composer-asset-pick {
+  list-style: none;
+  margin: 8px 0 0;
+  padding: 0;
+  display: grid;
+  gap: 6px;
+  max-height: 220px;
+  overflow: auto;
+}
+
+.composer-asset-pick button {
+  width: 100%;
+  display: grid;
+  grid-template-columns: 48px minmax(0, 1fr);
+  gap: 8px;
+  align-items: center;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  background: rgba(255, 253, 248, 0.95);
+  padding: 5px;
+  cursor: pointer;
+  text-align: left;
+  font: 12px/1.35 var(--font-sans-en), system-ui, sans-serif;
+  color: var(--ink);
+}
+
+.composer-asset-pick button.active {
+  border-color: color-mix(in srgb, var(--gold) 55%, var(--line));
+  background: color-mix(in srgb, var(--gold) 12%, #fffdf8);
+}
+
+.composer-asset-pick img {
+  width: 48px;
+  height: 48px;
+  object-fit: cover;
+  border-radius: 8px;
+}
+
+.composer-print-stack {
+  display: none;
+}
+
+@media (max-width: 1100px) {
+  .composer-board {
+    grid-template-columns: 1fr;
+  }
+
+  .composer-pages,
+  .composer-inspector {
+    position: static;
+    max-height: none;
+  }
+
+  .composer-canvas-wrap {
+    max-height: none;
+  }
+}
+
+@media print {
+  .no-print,
+  .admin-nav,
+  .composer-toolbar,
+  .composer-pages,
+  .composer-inspector,
+  .composer-page-head,
+  .site-header,
+  .site-footer {
+    display: none !important;
+  }
+
+  .composer-canvas-wrap > .composer-a4 {
+    display: none !important;
+  }
+
+  .composer-print-stack {
+    display: grid !important;
+    gap: 0;
+  }
+
+  .composer-print-stack .composer-a4 {
+    width: 210mm;
+    height: 297mm;
+    aspect-ratio: auto;
+    box-shadow: none;
+    border: 0;
+    border-radius: 0;
+    page-break-after: always;
+    break-after: page;
+  }
+
+  .composer-slot {
+    border: 0 !important;
+    background: transparent !important;
+  }
+
+  .admin-shell,
+  .composer-shell,
+  .composer-board,
+  .composer-canvas-wrap {
+    display: block !important;
+    max-height: none !important;
+    overflow: visible !important;
+    padding: 0 !important;
+    border: 0 !important;
+    background: transparent !important;
   }
 }

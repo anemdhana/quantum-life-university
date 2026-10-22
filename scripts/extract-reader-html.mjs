@@ -1,6 +1,7 @@
 /**
  * Pulls chapter JSON out of Swadhyaya English day HTML readers
- * into content/*.json and a Supabase seed for Devi Navaratrula Jnanam.
+ * into content/*.json and supabase/seed-devi-en.sql for Devi Navaratrula Jnanam.
+ * Telugu days 1–7: npm run content:te (scripts/extract-te-readers.mjs).
  *
  * Usage: node scripts/extract-reader-html.mjs
  */
@@ -11,6 +12,19 @@ import { fileURLToPath } from "node:url";
 
 const SERIES_SLUG = "devi-navaratrula-jnanam";
 const SERIES_NAME = "Devi Navaratrula Jnanam";
+
+/** Thematic day titles (not the programme name "Jnanodayam"). */
+const DAY_TITLES = {
+  1: "Bathukamma · The Asura and the Hara Centre",
+  2: "The Empty Vessel · Shakti and Chaitanya",
+  3: "Sura and Asura · Svara and Apasvara",
+  4: "Cause, Symbol, and a New Birth",
+  5: "Two Navaratris · Aham and Sarvam",
+  6: "Parashakti · Mahishasura Mardini",
+  7: "The Sword of Knowledge · Sumbha and Nisumbha",
+  8: "Devi Shakti · Nature and the Power of Words",
+  9: "The First Principle · Shakti, Chaitanya, Knowledge",
+};
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
 const readerDir = path.join(root, "Swadhyaya", "9-Day-Devi-Navaratri-Dr-Newton");
@@ -59,7 +73,7 @@ for (let dayNumber = 1; dayNumber <= 9; dayNumber += 1) {
     file,
     dayNumber,
     language: "en",
-    title: "Jnanodayam",
+    title: DAY_TITLES[dayNumber] ?? `Day ${dayNumber}`,
     subtitle: `Devi Navaratri · Day ${dayNumber} (English)`,
   });
 }

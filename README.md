@@ -27,7 +27,13 @@ Local sample accounts, also listed on the sign-in page:
 
 Passwords must be at least 12 characters and include a lowercase letter, an uppercase letter, a number, and a symbol. Change yours at [http://localhost:3000/account](http://localhost:3000/account). The current password is required. Open signup is off, so roles stay on the assigned accounts.
 
-`npm run content` rebuilds `content/day-08-*.json` and `supabase/seed.sql` from HTML readers under `Swadhyaya/9-Day-Devi-Navaratri-Dr-Newton/`.
+`npm run content` rebuilds English `content/day-0N-en.json` and `supabase/seed-devi-en.sql` from HTML readers under `Swadhyaya/9-Day-Devi-Navaratri-Dr-Newton/`.
+
+`npm run content:te` imports Telugu days 1–7 (skips day 8) from the Telugu two-page readers, replaces generic section titles, writes `content/day-0N-te.json` + `supabase/seed-devi-te.sql`, and copies `day-0N-te.html` into Swadhyaya.
+
+`npm run content:dump` exports the live library (days + sections) from Supabase into `content/*.json` and refreshes `supabase/seed-devi-en.sql`, `seed-devi-te.sql`, and `seed.sql`.
+
+`npm run content:html` regenerates static two-page readers under `Swadhyaya/9-Day-Devi-Navaratri-Dr-Newton/` (same layout as `/series/.../day/N`) for all TE + EN days.
 
 ## Monthly newsletter
 

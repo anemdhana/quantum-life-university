@@ -4,7 +4,7 @@
 > Bundle this file unchanged in every end-of-month resource export.  
 > Produce a **Telugu-first soft PDF** (A4) unless the brief says otherwise.
 
-**Companions:** [README](./QLU-MONTHLY-NEWSLETTER-README.md) · [Requirements](./QLU-MONTHLY-NEWSLETTER-REQUIREMENTS.md) · [Technical](./QLU-MONTHLY-NEWSLETTER-TECHNICAL.md) · [API](./QLU-MONTHLY-NEWSLETTER-API.md)
+**Companions:** [README](./QLU-MONTHLY-NEWSLETTER-README.md) · [Composer roadmap](./QLU-NEWSLETTER-COMPOSER.md) · [Requirements](./QLU-MONTHLY-NEWSLETTER-REQUIREMENTS.md) · [Technical](./QLU-MONTHLY-NEWSLETTER-TECHNICAL.md) · [API](./QLU-MONTHLY-NEWSLETTER-API.md)
 
 ---
 
@@ -27,29 +27,23 @@ Do **not** invent teachings. Use only the provided `.md` asset files and images.
 |------|--------|
 | Page size | **A4** (210 × 297 mm) |
 | Orientation | Portrait |
-| Margins | ≥ 16 mm all sides; prefer 18–20 mm for Telugu line length (**≥ 12 mm** in Tiles mode) |
-| Length | Target **8–16 pages** (Tiles may land shorter); prefer under **8 MB** PDF |
-| Columns | **Article:** single column. **Tiles:** soft **2-column** item grid within each section |
+| Margins | ≥ 16 mm all sides; prefer 18–20 mm for Telugu line length (**≥ 12 mm** for dense grids) |
+| Length | Target **8–16 pages**; prefer under **8 MB** PDF |
+| Columns | Follow **Section Instruction** (1 / 2 / 3 grids). If none: single column |
 | Page numbers | Footer centre or outer: `పేజీ X / Y` or `X / Y` |
 | Footer brand | `Quantum Life University` · issue id e.g. `2026-04` |
 
-### 2.1 Layout modes (choose one per issue — set in Admin → Prepare PDF)
+### 2.1 Layout directive priority (highest first)
 
-**Article (reading flow)** — default for long experiences. One item after another: photo, header title, subtitle, then Summary as the topic paragraph. Generous vertical rhythm.
+Layout is driven by Admin **section** and **photo** instructions (not a global Article/Tiles toggle).
 
-**Tiles (compact grid)** — denser “spiritual news” pages **when there is enough material**. Within each section, arrange items as a soft **2-column tile grid** (table-like density, not a spreadsheet):
+1. **Section Instruction** — how the whole section looks (2/3 grids, content placement, background colour or wash, density). Exported in `02-LAYOUT-DIRECTIVES.md` §A and at the top of each `sections/*.md`.  
+2. **Photo Instruction** — mandatory look for one item (full page, split grids, circular crop, etc.).  
+3. **Summary Instruction** — how that item’s Summary text is presented (bullets, length, pull-quote, tone). Not new facts.  
+4. **Use as background image** — place that photo as a soft washed background (~20–35% strength) so Telugu text stays primary; not an opaque foreground tile.  
+5. If no instructions: calm single-column reading flow, then colour/font defaults in this file.
 
-- Gutters ~8–10 mm; optional light `#f6f1e8` tile wash or thin `#e8dfd0` frame  
-- Per tile: photo → **Header title** → muted **Subtitle** → **Summary** as short topic body  
-- Section headings stay full-width gold/brown; only *items* tile  
-- Aim to keep several stories on the same page while Telugu stays ≥ 9–10 pt  
-- Still warm and calm — no harsh gridlines, no purple UI chrome, no emoji stickers  
-
-**If content is thin** (one or two short items in a section, or sparse Summaries): **do not force tiles**. Use Article flow for that section (or the whole issue) so pages do not look empty or artificially padded.
-
-### 2.2 Per-item Instruction (highest layout priority)
-
-Admin **Instruction** text (exported in `02-LAYOUT-DIRECTIVES.md` and as **MUST FOLLOW** blockquotes in `sections/*.md`) is a **mandatory layout directive** for that photo only. It overrides Article/Tiles defaults and the default rectangular image treatment when it asks for something else (e.g. full first page, left photo / right summary, circular crop). Keep QLU colours and Telugu voice; change composition as directed.
+Keep QLU colours and Telugu voice; change composition as directed.
 
 ---
 
@@ -134,9 +128,12 @@ Each section starts on a clear visual break (gold hairline or spacing). Do not m
 |-------------|---------|
 | **Long label** | **Header title** (first line, or text before `—` / `\|`) + **Subtitle** (further lines / remainder) |
 | **Summary** | **Topic content** — the paragraph(s) about this item (who, what, why it matters). Expand into natural Telugu; do not invent beyond this text. |
-| **Instruction** | **Mandatory layout** for that item when non-empty (page placement, grids, circular crop, emphasis). Overrides Article/Tiles defaults. Not factual content. |
+| **Section Instruction** | **Mandatory layout for the whole section** when non-empty (grids, placement, background colour/image). |
+| **Photo Instruction** | **Mandatory layout for that item** when non-empty. Overrides section defaults for that item only. Not factual content. |
+| **Summary Instruction** | **Mandatory text presentation** for Summary when non-empty (format, length, tone). Not new facts. |
+| **Use as background** | Soft washed background image; text remains primary. |
 
-**Photos:** Prefer quality over quantity. **Article:** typical max **1–3 images per section**, **≤ ~12** whole issue unless the pack is photo-heavy. **Tiles:** more items per page is OK if type stays readable — skip tiles when the pack is thin. Do not dump raw metadata strings.
+**Photos:** Prefer quality over quantity. Typical max **1–3 images per section**, **≤ ~12** whole issue unless Section Instruction asks for a denser grid. Do not dump raw metadata strings.
 
 ---
 
@@ -144,7 +141,8 @@ Each section starts on a clear visual break (gold hairline or spacing). Do not m
 
 - **Default:** rectangular photos; soft corner radius optional (≤ 8 px); thin `#e8dfd0` border OK  
 - **When Instruction asks for circle / curved crop:** use a soft circular mask; optional thin gold (`#a17b43`) or paper ring — still calm, no neon glow  
-- **When Instruction asks for split page / full page:** honour it (e.g. page-1 hero: photo left, Summary right) even if it differs from Tiles  
+- **When Instruction asks for split page / full page:** honour it (e.g. page-1 hero: photo left, Summary right)  
+
 - No floating badges, stickers, or emoji overlays on photos  
 - Hierarchy: photo + **Header title** + muted **Subtitle**; Summary is the topic body (unless Instruction places Summary beside the photo)  
 - Relative paths in export: keep `images/…` next to markdown when drafting  
@@ -155,7 +153,7 @@ Each section starts on a clear visual break (gold hairline or spacing). Do not m
 
 When given this look-and-feel file + a month’s resource folder:
 
-1. A **complete Telugu newsletter draft** structured with the seven headings above, in the **layout mode** named in the chat prompt (Article or Tiles).  
+1. A **complete Telugu newsletter draft** structured with the seven headings above, following section/photo Instructions.  
 2. Explicit **image placement notes** (`[Image: images/….jpg — title: … — subtitle: …]`).  
 3. Optional: a one-page English outline for editors (secondary).  
 4. **Not** required: final print-ready PDF binary unless the tool can export PDF with embedded Telugu fonts — then follow this brief.
@@ -168,7 +166,7 @@ If content is thin, say so under the section rather than inventing stories.
 
 - [ ] A4, paper `#fffdf8`, ink `#352d26`, gold accents `#a17b43`  
 - [ ] Seven sections in correct order  
-- [ ] Requested layout preference applied (Tiles relaxed when content is thin)  
+- [ ] Section/photo Instructions applied (calm single-column only when none)  
 - [ ] Telugu body; no invented teachings  
 - [ ] Label → title/subtitle; Summary → topic content; Instruction → presentation only  
 - [ ] Calm masthead; QLU identity present  

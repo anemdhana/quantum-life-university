@@ -89,11 +89,20 @@ type NewsletterAssetRow = {
   label: string;
   summary: string;
   instruction: string;
+  summary_instruction: string;
+  use_as_background: boolean;
   image_url: string;
   taken_on: string;
   created_by: string | null;
   created_at: string;
   updated_at: string;
+};
+
+type NewsletterSectionSettingsRow = {
+  title: string;
+  instruction: string;
+  updated_at: string;
+  updated_by: string | null;
 };
 
 type Table<Row, Insert, Update = Partial<Insert>> = {
@@ -205,11 +214,22 @@ export type Database = {
           label: string;
           summary?: string;
           instruction?: string;
+          summary_instruction?: string;
+          use_as_background?: boolean;
           image_url: string;
           taken_on?: string;
           created_by?: string | null;
           created_at?: string;
           updated_at?: string;
+        }
+      >;
+      newsletter_section_settings: Table<
+        NewsletterSectionSettingsRow,
+        {
+          title: string;
+          instruction?: string;
+          updated_at?: string;
+          updated_by?: string | null;
         }
       >;
     };

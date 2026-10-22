@@ -9,25 +9,23 @@ Share a live URL with a few explorers using **Vercel Hobby** (app) + **Supabase 
 
 Local Docker Supabase (`localhost:54331`) **cannot** serve shared users. Create a cloud project.
 
+**Dedicated project:** Quantum Life University uses its **own** Supabase Free project (Auth + Postgres). Do **not** reuse the yagna visitors project URL (`oqnvaqhzzaooxieydwws` or any shared org DB). Point local remote work at that QLU project via gitignored `.env.local`; keep Docker `.env` for optional localhost only (Next prefers `.env.local`).
+
 **Repo:** `https://github.com/anemdhana/quantum-life-university` · branch `main`
 
 ---
 
 ## 1. Create a free Supabase project
 
-1. Sign in at [supabase.com](https://supabase.com) → **New project**.
+1. Sign in at [supabase.com](https://supabase.com) → **New project** (name e.g. `quantum-life-university`). Use a **new** project — not an existing visitors/yagna one.
 2. Note region, set a strong DB password, wait until the project is ready.
 3. Open **Project Settings → API** and copy:
    - **Project URL** → `NEXT_PUBLIC_SUPABASE_URL`
    - **anon public** key → `NEXT_PUBLIC_SUPABASE_ANON_KEY`
-4. Apply schema: **SQL Editor** → run the SQL files under `supabase/migrations/` **in filename order** (oldest first), e.g.:
-   - `20261019120000_init.sql`
-   - `20261019140000_series.sql`
-   - …through…
-   - `20261021093000_newsletter_global_assets_title.sql`  
-   Or use the Supabase CLI locally: `supabase link` then `supabase db push` (if you use that workflow).
-5. Create at least one user (**Authentication → Users**) and set their `profiles.role` to `'admin'` in **Table Editor → profiles** so Admin / Prepare / Newsletter work.
-6. Leave Auth URLs for after you have the Vercel domain (step 3).
+4. Apply schema: from the QLU repo, `npx supabase link --project-ref <ref>` then `npx supabase db push` (all files under `supabase/migrations/` in order). Or **SQL Editor** → run those migration files oldest-first through the latest (including newsletter + series cleanup).
+5. Seed library content remotely (`seed-devi-en.sql`, `seed-devi-te.sql`, `seed.sql`) via SQL Editor or `psql` with the DB URL / service role workflow.
+6. Create at least one user (**Authentication → Users**) and set their `profiles.role` to `'admin'` in **Table Editor → profiles** so Admin / Prepare / Newsletter work.
+7. For local remote testing, set Auth **Site URL** to `http://localhost:3000` and redirect `http://localhost:3000/auth/callback`. Switch to the Vercel domain in step 3 when you deploy.
 
 ---
 
@@ -105,7 +103,7 @@ Optional: export data from local and import into cloud later; for a few explorer
 - **Supabase Free:** ~500 MB DB; inactive projects can pause after ~7 days — one click to resume.
 - **Newsletter images** live under `public/newsletter/` on the app host; they are not in Supabase Storage in v1. Large uploads on the free host should stay within the app’s 5 MB image rule.
 - Do **not** put `SERVICE_ROLE_KEY` in Vercel public env. The app uses the anon key + user session + RLS.
-- Local `.env.local` stays for Docker; production secrets live only in Vercel / Supabase dashboards.
+- Local Docker uses `.env` (`localhost:54331`). Remote Auth/DB for local `npm run dev` uses gitignored `.env.local` with the QLU cloud Project URL + anon (+ service role only for seed/scripts). Production secrets live in Vercel / Supabase dashboards — never commit keys.
 
 ---
 

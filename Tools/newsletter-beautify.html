@@ -1,0 +1,449 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Newsletter text · ChatGPT</title>
+<style>
+  :root {
+    --ink: #352d26; --muted: #7c6e5d; --line: #e8dfd0;
+    --paper: #fffdf8; --panel: #f6f1e8; --gold: #a17b43; --heading: #6b4a25;
+    --accent: #2a6f97; --card: #ffffff;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    font-family: "Source Sans 3", "Noto Sans Telugu", "Segoe UI", sans-serif;
+    background:
+      radial-gradient(ellipse at 20% 0%, rgba(161, 123, 67, 0.08), transparent 50%),
+      linear-gradient(180deg, #f6f1e8 0%, var(--paper) 40%, #f4f7fb 100%);
+    color: var(--ink);
+    min-height: 100vh;
+    line-height: 1.55;
+  }
+  main { max-width: 920px; margin: 0 auto; padding: 28px 20px 48px; }
+  .crumb { font-size: .85rem; margin: 0 0 14px; color: var(--muted); }
+  .crumb a { color: var(--accent); text-decoration: none; }
+  .crumb a:hover { text-decoration: underline; }
+  .brand {
+    font-size: .72rem; letter-spacing: .14em; text-transform: uppercase;
+    color: var(--gold); font-weight: 600; margin: 0 0 6px;
+  }
+  h1 { font-size: 1.55rem; margin: 0 0 6px; color: var(--heading); }
+  .sub { margin: 0 0 18px; color: var(--muted); max-width: 56ch; }
+  .grid {
+    display: grid; gap: 14px;
+    grid-template-columns: 1fr 1fr;
+  }
+  @media (max-width: 760px) { .grid { grid-template-columns: 1fr; } }
+  .panel {
+    background: var(--card);
+    border: 1px solid var(--line);
+    border-radius: 14px;
+    padding: 16px 18px;
+  }
+  .panel.full { grid-column: 1 / -1; }
+  label { display: block; font-size: .85rem; color: var(--muted); margin: 0 0 6px; }
+  .field { margin-top: 12px; }
+  select, textarea, input[type="text"] {
+    width: 100%; border: 1px solid var(--line); border-radius: 10px;
+    padding: 10px 12px; font: inherit; background: var(--paper); color: var(--ink);
+  }
+  textarea { min-height: 180px; resize: vertical; line-height: 1.6; }
+  #promptOut, #result { min-height: 160px; font-size: .95rem; }
+  .check {
+    display: flex; gap: 10px; align-items: flex-start;
+    margin: 0 0 12px; padding: 10px 12px; border-radius: 10px;
+    background: var(--panel); border: 1px solid var(--line);
+    font-size: .92rem; color: var(--ink); cursor: pointer;
+  }
+  .check input { margin-top: 3px; flex: 0 0 auto; }
+  .check span { color: var(--muted); font-size: .85rem; display: block; margin-top: 2px; }
+  .row { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 12px; align-items: center; }
+  button {
+    border: 1px solid var(--line); background: white; border-radius: 8px;
+    padding: 9px 14px; cursor: pointer; font: inherit; color: var(--ink);
+  }
+  button.primary {
+    background: var(--heading); color: #fffdf8; border-color: var(--heading);
+  }
+  button.gold {
+    background: var(--gold); color: #fffdf8; border-color: var(--gold);
+  }
+  button:disabled { opacity: .5; cursor: not-allowed; }
+  .hint { margin: 0; font-size: .85rem; color: var(--muted); }
+  .status { font-size: .9rem; color: var(--gold); min-height: 1.2em; }
+  .note {
+    margin-top: 16px; padding: 12px 14px; border-radius: 10px;
+    background: var(--panel); border: 1px solid var(--line);
+    color: var(--muted); font-size: .9rem;
+  }
+  details { margin-top: 8px; }
+  summary { cursor: pointer; font-weight: 600; color: var(--heading); }
+  .brief {
+    margin: 10px 0 0; padding: 10px 12px; border-radius: 8px;
+    background: var(--paper); border: 1px solid var(--line);
+    font-size: .88rem; color: var(--muted); white-space: pre-wrap;
+  }
+</style>
+</head>
+<body>
+<main>
+  <p class="crumb"><a href="./index.html">← Tools</a></p>
+  <p class="brand">Quantum Life University</p>
+  <h1>Beautify text · newsletter style</h1>
+  <p class="sub">The ChatGPT prompt updates as you type. Paste rough notes, or check that you’ll attach a <code>.txt</code> in the ChatGPT chat. Copy → ChatGPT → paste the polished result back here.</p>
+
+  <div class="grid">
+    <div class="panel">
+      <label for="section">Newsletter section</label>
+      <select id="section"></select>
+      <div class="field">
+        <label for="issue">Issue month (optional)</label>
+        <input id="issue" type="text" placeholder="e.g. 2026-10" autocomplete="off">
+      </div>
+      <div class="field">
+        <label for="lang">Output language</label>
+        <select id="lang">
+          <option value="te" selected>Telugu body (keep English / Sanskrit names)</option>
+          <option value="en">English body (QLU newsletter tone)</option>
+          <option value="both">Telugu + short English gloss</option>
+        </select>
+      </div>
+      <div class="field">
+        <label for="form">Presentation</label>
+        <select id="form">
+          <option value="auto" selected>Match section budget (auto)</option>
+          <option value="bullets">Short bullets</option>
+          <option value="paragraphs">Warm mini-paragraphs</option>
+          <option value="pullquote">Pull-quote + short body</option>
+        </select>
+      </div>
+    </div>
+
+    <div class="panel">
+      <label class="check" for="attachTxt">
+        <input id="attachTxt" type="checkbox">
+        <div>
+          I will attach a <strong>.txt</strong> in the ChatGPT chat
+          <span>Prompt will tell ChatGPT to use that attachment as SOURCE. Rough text below is optional notes.</span>
+        </div>
+      </label>
+      <label for="source">Your rough text <span id="sourceHint">(required unless attaching .txt)</span></label>
+      <textarea id="source" spellcheck="true" placeholder="Paste notes, voice draft, or English bullets…"></textarea>
+      <div class="row">
+        <button type="button" id="clearSrc">Clear text</button>
+        <span class="status" id="status" aria-live="polite"></span>
+      </div>
+    </div>
+
+    <div class="panel full">
+      <label for="promptOut">Prompt for ChatGPT</label>
+      <textarea id="promptOut" spellcheck="false" readonly placeholder="Prompt fills in automatically…"></textarea>
+      <div class="row">
+        <button type="button" class="gold" id="copyPrompt" disabled>Copy prompt</button>
+        <button type="button" id="downloadPrompt" disabled>Download prompt .txt</button>
+        <button type="button" class="primary" id="openGpt" disabled>Open ChatGPT</button>
+        <p class="hint" id="actionHint">No API key — you run ChatGPT yourself.</p>
+      </div>
+    </div>
+
+    <div class="panel full">
+      <label for="result">Polished result (paste from ChatGPT)</label>
+      <textarea id="result" spellcheck="true" placeholder="Paste ChatGPT’s newsletter-style text here…"></textarea>
+      <div class="row">
+        <button type="button" id="copyResult">Copy result</button>
+        <button type="button" id="downloadResult">Download .md</button>
+        <button type="button" id="clearResult">Clear result</button>
+      </div>
+    </div>
+  </div>
+
+  <details>
+    <summary>Style rules baked into the prompt</summary>
+    <div class="brief" id="styleBrief"></div>
+  </details>
+  <p class="note">Do not invent teachings — only polish the source. If the checkbox is on, attach your <code>.txt</code> in ChatGPT after pasting this prompt. This tool is for <strong>wording</strong> only.</p>
+</main>
+<script>
+const SECTIONS = [
+  { id: "themes", title: "Summary of the themes covered in that month", budget: "4–8 short bullets or mini-paragraphs; themes, not a day-by-day log." },
+  { id: "highlights", title: "Highlight classes of the month", budget: "3–6 items; date + title + 2–4 sentences each when dates exist." },
+  { id: "experiences", title: "Few Experiences from Participants", budget: "2–5 sharings; about 80–180 Telugu words each when Telugu." },
+  { id: "visits", title: "Dr. Newton's visits and classes in other places", budget: "Chronological; concise place + what happened." },
+  { id: "vanya", title: "Vanya Maitreya Highlights", budget: "Short highlights only; no unverified claims." },
+  { id: "updates", title: "Goloka, Sahasrara and QLU Updates", budget: "Factual dated updates; light and clear." },
+  { id: "upcoming", title: "Upcoming Programs/Announcements", budget: "Next 4–8 weeks; deadlines first." },
+  { id: "closing", title: "Short Closing", budget: "Blessing + contact line; calm and brief." },
+  { id: "global", title: "Global Assets (founders / logo / general)", budget: "Warm editorial caption or short bio block; knowledge-forward, not salesy." },
+  { id: "free", title: "Free text (any newsletter block)", budget: "Calm newsletter prose; keep length close to the source." }
+];
+
+const STYLE_BRIEF = `Voice: Warm, clear, guru-respectful; knowledge-forward; not salesy.
+Colours (for any layout notes): paper #fffdf8, ink #352d26, heading #6b4a25, gold #a17b43.
+Keep English / Sanskrit names as commonly used (Dr. Newton, Goloka, Sahasrara, Vanya Maitreya, Jnanodayam, QLU).
+Do not invent teachings, visits, or experiences beyond the source text.
+No purple gradients, hype, or marketing CTAs.`;
+
+const STORAGE = "qlu-tools-newsletter-beautify";
+
+const sectionEl = document.getElementById("section");
+const issueEl = document.getElementById("issue");
+const langEl = document.getElementById("lang");
+const formEl = document.getElementById("form");
+const attachEl = document.getElementById("attachTxt");
+const sourceEl = document.getElementById("source");
+const sourceHint = document.getElementById("sourceHint");
+const promptOut = document.getElementById("promptOut");
+const resultEl = document.getElementById("result");
+const statusEl = document.getElementById("status");
+const actionHint = document.getElementById("actionHint");
+const copyPromptBtn = document.getElementById("copyPrompt");
+const downloadPromptBtn = document.getElementById("downloadPrompt");
+const openGptBtn = document.getElementById("openGpt");
+
+SECTIONS.forEach((s) => {
+  const opt = document.createElement("option");
+  opt.value = s.id;
+  opt.textContent = s.title;
+  sectionEl.appendChild(opt);
+});
+document.getElementById("styleBrief").textContent = STYLE_BRIEF;
+
+function currentSection() {
+  return SECTIONS.find((s) => s.id === sectionEl.value) || SECTIONS[0];
+}
+
+function langLine() {
+  switch (langEl.value) {
+    case "en":
+      return "Write the body in clear English (QLU newsletter tone).";
+    case "both":
+      return "Write Telugu body first, then a short English gloss under it.";
+    default:
+      return "Write the body in **Telugu**. Keep established English / Sanskrit names unchanged.";
+  }
+}
+
+function formLine() {
+  switch (formEl.value) {
+    case "bullets":
+      return "Present as short bullets.";
+    case "paragraphs":
+      return "Present as warm mini-paragraphs.";
+    case "pullquote":
+      return "Open with one pull-quote line, then a short body.";
+    default:
+      return "Choose bullets or mini-paragraphs to match the section budget.";
+  }
+}
+
+function promptHeader(sec, issueLine) {
+  return `You are helping edit copy for the Quantum Life University (QLU) monthly newsletter (నెలవారీ వార్తాపత్రిక).
+
+${issueLine}
+Section heading (keep this exact English title if you include a heading):
+**${sec.title}**
+
+Section content budget: ${sec.budget}
+${langLine()}
+${formLine()}
+
+Style
+${STYLE_BRIEF}
+`;
+}
+
+function buildPrompt() {
+  const notes = sourceEl.value.trim();
+  const attach = attachEl.checked;
+  if (!attach && !notes) return "";
+
+  const sec = currentSection();
+  const issue = issueEl.value.trim();
+  const issueLine = issue ? `Issue month: **${issue}**.` : "Issue month: (not specified).";
+  const head = promptHeader(sec, issueLine);
+
+  if (attach && !notes) {
+    return `${head}
+Task
+I will attach a plain-text **.txt** file in this chat as the SOURCE.
+Beautify and clarify **that file’s contents** for this section. Fix grammar / flow; keep meaning.
+Do **not** add new facts, teachings, places, or names that are not in the SOURCE file.
+If the SOURCE is thin, keep the output short rather than inventing filler.
+If the attachment is missing or unreadable, stop and ask for the .txt — do **not** invent source text.
+Return only the polished newsletter text (optional exact section heading), no preamble.
+`;
+  }
+
+  if (attach && notes) {
+    return `${head}
+Task
+I will attach a plain-text **.txt** file in this chat as the SOURCE.
+Beautify and clarify **that file’s contents** for this section. Fix grammar / flow; keep meaning.
+Treat the EDITOR NOTES below as optional guidance only (tone, cut/keep hints) — not new facts unless they already appear in the SOURCE file.
+Do **not** add teachings, places, or names that are not in the SOURCE file.
+If the attachment is missing or unreadable, stop and ask for the .txt — do **not** invent source text.
+Return only the polished newsletter text (optional exact section heading), no preamble.
+
+EDITOR NOTES
+\`\`\`
+${notes}
+\`\`\`
+`;
+  }
+
+  return `${head}
+Task
+Beautify and clarify the SOURCE below for this section. Fix grammar / flow; keep meaning.
+Do **not** add new facts, teachings, places, or names that are not in the SOURCE.
+If the SOURCE is thin, keep the output short rather than inventing filler.
+Return only the polished newsletter text (optional exact section heading), no preamble.
+
+SOURCE
+\`\`\`
+${notes}
+\`\`\`
+`;
+}
+
+function refreshPrompt() {
+  const attach = attachEl.checked;
+  sourceHint.textContent = attach
+    ? "(optional notes — SOURCE is the .txt you attach in ChatGPT)"
+    : "(required unless attaching .txt)";
+
+  const text = buildPrompt();
+  promptOut.value = text;
+  const ok = Boolean(text);
+  copyPromptBtn.disabled = !ok;
+  downloadPromptBtn.disabled = !ok;
+  openGptBtn.disabled = !ok;
+
+  if (!ok) {
+    statusEl.textContent = "Paste rough text, or check “attach .txt in ChatGPT”.";
+    actionHint.textContent = "No API key — you run ChatGPT yourself.";
+  } else if (attach) {
+    statusEl.textContent = "Prompt ready — copy it, open ChatGPT, then attach your .txt.";
+    actionHint.textContent = "In ChatGPT: paste this prompt, then upload your .txt.";
+  } else {
+    statusEl.textContent = "Prompt ready — copy and paste into ChatGPT.";
+    actionHint.textContent = "No API key — you run ChatGPT yourself.";
+  }
+}
+
+function save() {
+  try {
+    localStorage.setItem(STORAGE, JSON.stringify({
+      section: sectionEl.value,
+      issue: issueEl.value,
+      lang: langEl.value,
+      form: formEl.value,
+      attachTxt: attachEl.checked,
+      source: sourceEl.value,
+      result: resultEl.value
+    }));
+  } catch (_) {}
+}
+
+function load() {
+  try {
+    const raw = localStorage.getItem(STORAGE);
+    if (!raw) return;
+    const d = JSON.parse(raw);
+    if (d.section) sectionEl.value = d.section;
+    if (d.issue) issueEl.value = d.issue;
+    if (d.lang) langEl.value = d.lang;
+    if (d.form) formEl.value = d.form;
+    if (typeof d.attachTxt === "boolean") attachEl.checked = d.attachTxt;
+    if (d.source) sourceEl.value = d.source;
+    if (d.result) resultEl.value = d.result;
+  } catch (_) {}
+}
+
+async function copyText(text, okMsg) {
+  if (!text) return;
+  try {
+    await navigator.clipboard.writeText(text);
+    statusEl.textContent = okMsg;
+  } catch (_) {
+    statusEl.textContent = "Copy failed — select the text and copy manually.";
+  }
+}
+
+function onChange() {
+  refreshPrompt();
+  save();
+}
+
+document.getElementById("clearSrc").addEventListener("click", () => {
+  sourceEl.value = "";
+  onChange();
+});
+
+copyPromptBtn.addEventListener("click", () => copyText(promptOut.value, "Prompt copied."));
+downloadPromptBtn.addEventListener("click", () => {
+  const text = promptOut.value.trim();
+  if (!text) return;
+  const sec = currentSection();
+  const stamp = new Date().toISOString().slice(0, 10);
+  const name = `qlu-newsletter-prompt-${sec.id}-${stamp}.txt`;
+  const blob = new Blob([text + "\n"], { type: "text/plain;charset=utf-8" });
+  const a = document.createElement("a");
+  a.href = URL.createObjectURL(blob);
+  a.download = name;
+  a.click();
+  URL.revokeObjectURL(a.href);
+  statusEl.textContent = attachEl.checked
+    ? `Downloaded ${name} — attach your .txt in ChatGPT too.`
+    : `Downloaded ${name}`;
+});
+openGptBtn.addEventListener("click", () => {
+  window.open("https://chatgpt.com/", "_blank", "noopener,noreferrer");
+  statusEl.textContent = attachEl.checked
+    ? "ChatGPT opened — paste the prompt, then attach your .txt."
+    : "ChatGPT opened — paste the prompt (Ctrl+V).";
+});
+
+document.getElementById("copyResult").addEventListener("click", () =>
+  copyText(resultEl.value.trim(), "Result copied.")
+);
+
+document.getElementById("downloadResult").addEventListener("click", () => {
+  const text = resultEl.value.trim();
+  if (!text) {
+    statusEl.textContent = "Nothing to download.";
+    return;
+  }
+  const sec = currentSection();
+  const stamp = new Date().toISOString().slice(0, 10);
+  const name = `qlu-newsletter-${sec.id}-${stamp}.md`;
+  const blob = new Blob([text + "\n"], { type: "text/markdown;charset=utf-8" });
+  const a = document.createElement("a");
+  a.href = URL.createObjectURL(blob);
+  a.download = name;
+  a.click();
+  URL.revokeObjectURL(a.href);
+  statusEl.textContent = `Downloaded ${name}`;
+});
+
+document.getElementById("clearResult").addEventListener("click", () => {
+  resultEl.value = "";
+  save();
+});
+
+["change", "input"].forEach((ev) => {
+  sectionEl.addEventListener(ev, onChange);
+  issueEl.addEventListener(ev, onChange);
+  langEl.addEventListener(ev, onChange);
+  formEl.addEventListener(ev, onChange);
+  attachEl.addEventListener(ev, onChange);
+  sourceEl.addEventListener(ev, onChange);
+  resultEl.addEventListener(ev, save);
+});
+
+load();
+refreshPrompt();
+</script>
+</body>
+</html>

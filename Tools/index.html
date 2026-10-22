@@ -1,0 +1,57 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>QLU Tools</title>
+  <style>
+    :root {
+      --ink: #1c2430; --muted: #526072; --line: #c5e2f2;
+      --panel: #e7f4fb; --card: #ffffff; --accent: #2a6f97;
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      font-family: "Segoe UI", "Noto Sans Telugu", system-ui, sans-serif;
+      background: #f4f7fb;
+      color: var(--ink);
+      line-height: 1.55;
+      min-height: 100vh;
+    }
+    main { max-width: 720px; margin: 0 auto; padding: 36px 20px 48px; }
+    h1 { font-size: 1.75rem; margin: 0 0 8px; }
+    .lede { margin: 0 0 22px; color: var(--muted); }
+    .card {
+      background: var(--card);
+      border: 1px solid var(--line);
+      border-radius: 14px;
+      padding: 18px 20px;
+      margin: 0 0 12px;
+      text-decoration: none;
+      color: inherit;
+      display: block;
+    }
+    .card:hover { border-color: var(--accent); box-shadow: 0 8px 20px rgba(42, 111, 151, 0.12); }
+    .card strong { display: block; font-size: 1.1rem; margin-bottom: 4px; color: var(--accent); }
+    .card span { color: var(--muted); font-size: 0.95rem; }
+    .note {
+      margin-top: 20px; padding: 12px 14px; border-radius: 10px;
+      background: var(--panel); border: 1px solid var(--line);
+      color: var(--muted); font-size: 0.9rem;
+    }
+    footer { margin-top: 28px; font-size: 0.85rem; color: var(--muted); }
+  </style>
+</head>
+<body>
+  <main>
+    <h1>QLU Tools</h1>
+    <p class="lede">Browser utilities. Open in Google Chrome on GitHub Pages (HTTPS).</p>
+    <a class="card" href="telugu-voice-type.html">
+      <strong>తెలుగు స్పీచ్ టు టెక్స్ట్</strong>
+      <span>Chrome te-IN voice typing · same engine as speechtyping.com · copy / download draft</span>
+    </a>
+    <p class="note">Mic needs HTTPS (GitHub Pages) or localhost. Drafts stay in this browser until you Download .txt.</p>
+    <footer>Quantum Life University · Tools</footer>
+  </main>
+</body>
+</html>

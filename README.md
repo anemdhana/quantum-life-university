@@ -35,6 +35,19 @@ Passwords must be at least 12 characters and include a lowercase letter, an uppe
 
 `npm run content:html` regenerates static two-page readers under `Swadhyaya/9-Day-Devi-Navaratri-Dr-Newton/` (same layout as `/series/.../day/N`) for all TE + EN days.
 
+## Tools (GitHub Pages)
+
+Folder [`Tools/`](./Tools/) is separate from Swadhyaya. Point Pages at `/Tools` (or deploy that folder).
+
+| Path | What |
+| --- | --- |
+| [Tools/index.html](./Tools/index.html) | Tools hub |
+| [Tools/telugu-voice-type.html](./Tools/telugu-voice-type.html) | Telugu speech-to-text (Chrome `te-IN`, same UI as `telugu_voice_type.py`) |
+
+Open in **Google Chrome**; allow the mic. Drafts save in `localStorage`; use **Download .txt** for a file.
+
+Static readings stay under [`Swadhyaya/`](./Swadhyaya/).
+
 ## Monthly newsletter
 
 Telugu soft PDF assembled from a global admin photo library and an end-of-month `.md` + images export for AI drafting. Start here: [docs/QLU-MONTHLY-NEWSLETTER-README.md](./docs/QLU-MONTHLY-NEWSLETTER-README.md).
